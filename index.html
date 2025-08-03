@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gnostic Sigil Pareidolia</title>
+  <title>Gnostic Sigil Pareidolia (Debug)</title>
   <style>
     body {
       margin: 0;
@@ -50,7 +50,6 @@
 </head>
 <body>
   <div class="grid" id="grid"></div>
-
   <script>
     const gridEl = document.getElementById('grid');
     const cols = 40;
@@ -60,22 +59,7 @@
     const grid = [];
 
     const wordList = new Set([
-      // 3-letter
-      "AND", "ART", "SUN", "EYE", "FUN", "RUN", "YES", "SEE", "END", "NOW",
-      "AIR", "KEY", "WAY", "OLD", "NEW", "GOD", "ONE", "TOP", "OWN",
-      // 4-letter
-      "TIME", "LOVE", "SOUL", "MIND", "SIGN", "CALL", "DARK", "HOPE",
-      "FREE", "NAME", "TRUE", "OPEN", "STAR", "WISH", "RING", "LIFE",
-      "AURA", "CUBE", "MYTH", "VOID", "MASK", "RITE", "PORT", "ECHO",
-      "FIRE", "OMEN", "SEEK", "LORE", "TONE", "GATE", "FORM", "PATH",
-      "HEAL", "SAGE", "HUSH", "FEEL", "STAY", "HOLD", "RISE", "FLOW",
-      // 5-letter
-      "LIGHT", "TRUTH", "HEART", "SIGIL", "ALIGN", "GRACE", "FORCE",
-      "SIGHT", "INNER", "SPARK", "WORLD", "SENSE", "PEACE", "CYCLE",
-      "SHIFT", "DREAM", "GATES", "VIBES", "UNITY", "SHELL", "ECHOE",
-      "FLAME", "ALIVE", "BREAT", "VOICE", "NIGHT", "MORPH", "STILL",
-      "CRYPT", "POWER", "DEPTH", "GIVEN", "OBEYD", "CLOAK", "AWAKE",
-      "VOWEL", "THIRD", "MIRRO", "PLANE", "WAVES"
+      "SUN", "GOD", "TIME", "SEE", "LOVE", "MIND", "SOUL", "SIGN"
     ]);
 
     function randomLetter() {
@@ -97,13 +81,20 @@
           gridEl.appendChild(cell);
         }
       }
+
+      // Force in "SUN" vertically at col 5, rows 10-12
+      grid[5][10].innerText = "S";
+      grid[5][11].innerText = "U";
+      grid[5][12].innerText = "N";
+
+      // Trigger detection manually
+      checkForWords(5, 12);
     }
 
     function glowCells(cells) {
+      console.log("✨ Glowing:", cells.map(c => c.innerText).join(''));
       cells.forEach(c => c.classList.add('glow'));
-      setTimeout(() => {
-        cells.forEach(c => c.classList.remove('glow'));
-      }, 1200);
+      setTimeout(() => cells.forEach(c => c.classList.remove('glow')), 1200);
     }
 
     function checkForWords(col, row) {
@@ -116,7 +107,7 @@
             vLetters.push(grid[col][vStart + i]);
           }
           const vWord = vLetters.map(c => c.innerText).join('');
-          console.log("Vertical check:", vWord);
+          console.log("V-check:", vWord);
           if (wordList.has(vWord)) glowCells(vLetters);
         }
 
@@ -128,6 +119,7 @@
             hLetters.push(grid[hStart + i][row]);
           }
           const hWord = hLetters.map(c => c.innerText).join('');
+          console.log("H-check:", hWord);
           if (wordList.has(hWord)) glowCells(hLetters);
         }
       }
