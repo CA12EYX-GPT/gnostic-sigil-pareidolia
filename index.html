@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gnostic Sigil Pareidolia – Locked SUN Test</title>
+  <title>Gnostic Sigil Pareidolia – Easy Test</title>
   <style>
     body {
       margin: 0;
@@ -21,7 +21,7 @@
       display: grid;
       grid-template-columns: repeat(40, 1fr);
       grid-template-rows: repeat(30, 1fr);
-      font-size: 0.85rem;
+      font-size: 1.5rem; /* 🔍 Increased for visibility */
     }
 
     .cell {
@@ -31,15 +31,6 @@
       user-select: none;
       color: #eaeaea;
       transition: color 0.8s ease;
-    }
-
-    .trail {
-      color: #888 !important;
-    }
-
-    .sigil {
-      color: #e91e63 !important;
-      text-shadow: 0 0 6px #e91e63;
     }
 
     .glow {
@@ -57,7 +48,7 @@
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const grid = [];
 
-    const wordList = new Set(["SUN", "GOD", "TIME", "SEE", "LOVE"]);
+    const wordList = new Set(["SUN"]);
 
     function buildGrid() {
       for (let col = 0; col < cols; col++) {
@@ -71,29 +62,23 @@
         }
       }
 
-      // 🔒 Locked vertical "SUN" at col 5, rows 10–12
-      grid[5][10].innerText = "S";
-      grid[5][11].innerText = "U";
-      grid[5][12].innerText = "N";
-      grid[5][10].dataset.locked = "true";
-      grid[5][11].dataset.locked = "true";
-      grid[5][12].dataset.locked = "true";
-      grid[5][10].className = "cell";
-      grid[5][11].className = "cell";
-      grid[5][12].className = "cell";
-      checkForWords(5, 12);
+      // 🔒 Vertical "SUN" at col 2, rows 2–4
+      grid[2][2].innerText = "S";
+      grid[2][3].innerText = "U";
+      grid[2][4].innerText = "N";
+      grid[2][2].dataset.locked = "true";
+      grid[2][3].dataset.locked = "true";
+      grid[2][4].dataset.locked = "true";
+      checkForWords(2, 4);
 
-      // 🔒 Locked horizontal "SUN" at row 15, cols 6–8
-      grid[6][15].innerText = "S";
-      grid[7][15].innerText = "U";
-      grid[8][15].innerText = "N";
-      grid[6][15].dataset.locked = "true";
-      grid[7][15].dataset.locked = "true";
-      grid[8][15].dataset.locked = "true";
-      grid[6][15].className = "cell";
-      grid[7][15].className = "cell";
-      grid[8][15].className = "cell";
-      checkForWords(6, 15);
+      // 🔒 Horizontal "SUN" at row 6, cols 2–4
+      grid[2][6].innerText = "S";
+      grid[3][6].innerText = "U";
+      grid[4][6].innerText = "N";
+      grid[2][6].dataset.locked = "true";
+      grid[3][6].dataset.locked = "true";
+      grid[4][6].dataset.locked = "true";
+      checkForWords(2, 6); // ✅ call from first letter of word
     }
 
     function glowCells(cells) {
@@ -118,7 +103,6 @@
             vLetters.push(grid[col][vStart + i]);
           }
           const vWord = vLetters.map(c => c.innerText).join('');
-          console.log("V-check:", vWord);
           if (wordList.has(vWord)) glowCells(vLetters);
         }
 
@@ -130,7 +114,6 @@
             hLetters.push(grid[hStart + i][row]);
           }
           const hWord = hLetters.map(c => c.innerText).join('');
-          console.log("H-check:", hWord);
           if (wordList.has(hWord)) glowCells(hLetters);
         }
       }
