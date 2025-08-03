@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Waterfall – Whispers & Words</title>
+  <title>Waterfall – Dictionary + Whispers</title>
   <style>
     body {
       margin: 0;
@@ -27,33 +27,57 @@
       text-shadow: 0 0 8px teal;
       font-weight: bold;
     }
+
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      color: #0ff;
+      font-size: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: monospace;
+      z-index: 10;
+    }
   </style>
 </head>
 <body>
 
-  <!-- 🔊 AUDIO LAYER -->
+  <!-- 🔊 Whisper Audio -->
   <audio id="whispers" loop autoplay>
     <source src="https://cdn.jsdelivr.net/gh/CA12EYX-GPT/assets/whispers.mp3" type="audio/mpeg">
     Your browser does not support the audio element.
   </audio>
 
+  <!-- 🔄 Loading screen -->
+  <div id="loading">Loading dictionary…</div>
+
   <script>
-    // ============= 📚 LONG WORD LIST (truncated here) =============
-    const wordList = [
-      "abandon", "ability", "absorb", "abstract", "academy", "access", "accident",
-      "account", "accuracy", "achieve", "acid", "acoustic", "acquire", "across",
-      "act", "action", "actor", "actual", "adapt", "addict", "address", "adjust",
-      "admit", "adopt", "adult", "advance", "advice", "aerobic", "affair", "affect",
-      "afford", "afraid", "again", "agency", "agenda", "agent", "agile", "agony",
-      // ... You can expand this to 10,000+ from a wordlist file
-    ];
+    let wordList = [];
+    let words = [];
+    let frameCount = 0;
 
     const dropFrequency = 60;
     const maxWordsOnScreen = 100;
     const minWordLengthToGlow = 3;
 
-    let words = [];
-    let frameCount = 0;
+    // Load dictionary from local file
+    fetch('dictionary.txt')
+      .then(res => res.text())
+      .then(text => {
+        wordList = text
+          .split('\n')
+          .map(w => w.trim())
+          .filter(w => w.length >= minWordLengthToGlow);
+
+        console.log(`Loaded ${wordList.length} words`);
+        document.getElementById('loading').remove();
+        requestAnimationFrame(animate);
+      });
 
     function animate() {
       frameCount++;
@@ -89,6 +113,8 @@
       el.style.left = `${x}px`;
       el.style.top = `-30px`;
 
+      el.y = -30;
+
       if (text.length >= minWordLengthToGlow) {
         el.classList.add("glow");
         setTimeout(() => el.classList.remove("glow"), 1000);
@@ -101,9 +127,7 @@
       };
     }
 
-    requestAnimationFrame(animate);
-
-    // ============= 🔇 MUTE/UNMUTE AUDIO WITH "M" =============
+    // Mute toggle
     const audio = document.getElementById("whispers");
     window.addEventListener("keydown", (e) => {
       if (e.key.toLowerCase() === "m") {
