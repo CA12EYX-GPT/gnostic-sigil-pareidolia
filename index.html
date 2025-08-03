@@ -60,14 +60,22 @@
     const grid = [];
 
     const wordList = new Set([
-      "AND", "ART", "EYE", "SUN", "FUN", "RUN", "YES", "YOU", "SEE", "END",
-      "NOW", "AIR", "KEY", "WAY", "OLD", "NEW", "GOD", "ONE", "TOP", "OWN",
-      "TIME", "LOVE", "SOUL", "MIND", "SIGN", "CALL", "DARK", "FEEL", "HOPE",
-      "FREE", "GLOW", "NAME", "TRUE", "OPEN", "STAR", "WISH", "RING", "LIFE",
-      "LIGHT", "TRUTH", "HEART", "SIGIL", "ALIGN", "GRACE", "FORCE", "SIGHT",
-      "INNER", "SPARK", "WORLD", "SENSE", "PEACE", "CYCLE", "SHIFT", "DREAM",
-      "GATES", "VIBES", "UNITY", "SHELL", "ECHOE", "FLAME", "ALIVE", "BREAT",
-      "VOICE", "NIGHT", "MORPH", "STILL", "CRYPT", "POWER", "DEPTH", "GIVEN"
+      // 3-letter
+      "AND", "ART", "SUN", "EYE", "FUN", "RUN", "YES", "SEE", "END", "NOW",
+      "AIR", "KEY", "WAY", "OLD", "NEW", "GOD", "ONE", "TOP", "OWN",
+      // 4-letter
+      "TIME", "LOVE", "SOUL", "MIND", "SIGN", "CALL", "DARK", "HOPE",
+      "FREE", "NAME", "TRUE", "OPEN", "STAR", "WISH", "RING", "LIFE",
+      "AURA", "CUBE", "MYTH", "VOID", "MASK", "RITE", "PORT", "ECHO",
+      "FIRE", "OMEN", "SEEK", "LORE", "TONE", "GATE", "FORM", "PATH",
+      "HEAL", "SAGE", "HUSH", "FEEL", "STAY", "HOLD", "RISE", "FLOW",
+      // 5-letter
+      "LIGHT", "TRUTH", "HEART", "SIGIL", "ALIGN", "GRACE", "FORCE",
+      "SIGHT", "INNER", "SPARK", "WORLD", "SENSE", "PEACE", "CYCLE",
+      "SHIFT", "DREAM", "GATES", "VIBES", "UNITY", "SHELL", "ECHOE",
+      "FLAME", "ALIVE", "BREAT", "VOICE", "NIGHT", "MORPH", "STILL",
+      "CRYPT", "POWER", "DEPTH", "GIVEN", "OBEYD", "CLOAK", "AWAKE",
+      "VOWEL", "THIRD", "MIRRO", "PLANE", "WAVES"
     ]);
 
     function randomLetter() {
@@ -183,7 +191,7 @@
         console.error("❌ Grid dimensions invalid");
         return;
       }
- 
+
       setInterval(triggerRandomDrops, 400);
     });
   </script>
