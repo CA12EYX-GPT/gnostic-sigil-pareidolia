@@ -19,7 +19,7 @@
       width: 100vw;
       height: 100vh;
       display: grid;
-      grid-template-columns: repeat(20, 1fr);
+      grid-template-columns: repeat(40, 1fr);
       grid-template-rows: repeat(30, 1fr);
       font-size: 0.85rem;
     }
@@ -29,12 +29,12 @@
       align-items: center;
       justify-content: center;
       user-select: none;
-      color: #eaeaea; /* static white by default */
-      transition: color 0.6s ease;
+      color: #eaeaea;
+      transition: color 1.2s ease;
     }
 
-    .trail {
-      color: #888 !important; /* temporarily grey during animation */
+    .pulse {
+      color: #666 !important;
     }
 
     .sigil {
@@ -47,7 +47,7 @@
   <div class="grid" id="grid"></div>
   <script>
     const gridEl = document.getElementById('grid');
-    const cols = 20;
+    const cols = 40;
     const rows = 30;
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const sigils = ['◉', '∆', '⟁', '✶'];
@@ -61,61 +61,57 @@
       return sigils[Math.floor(Math.random() * sigils.length)];
     }
 
-    function isSigil() {
-      return Math.random() < 0.01;
-    }
-
-    // Create grid with static letters
+    // Build static grid
     for (let col = 0; col < cols; col++) {
       grid[col] = [];
       for (let row = 0; row < rows; row++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
-        cell.dataset.col = col;
-        cell.dataset.row = row;
         cell.innerText = randomLetter();
         grid[col][row] = cell;
         gridEl.appendChild(cell);
       }
     }
 
-    // Drop state per column
-    const drops = new Array(cols).fill(0).map(() => Math.floor(Math.random() * rows));
+    // Mist sweep: pulsing band from right to left
+    let currentCol = cols - 1;
 
-    function step() {
-      for (let col = cols - 1; col >= 0; col--) {
-        const drop = drops[col];
+    function mistStep() {
+      // Randomly choose how many columns wide the mist band is
+      const bandWidth = Math.floor(Math.random() * 3) + 2;
+      const bandStart = currentCol;
 
-        for (let trail = 0; trail < 5; trail++) {
-          const row = (drop - trail + rows) % rows;
+      for (let i = 0; i < bandWidth; i++) {
+        const col = (bandStart - i + cols) % cols;
+        for (let row = 0; row < rows; row++) {
           const cell = grid[col][row];
-          const isTop = trail === 0;
-          const useSigil = isSigil();
 
-          // Show sigil at top of trail
-          if (useSigil && isTop) {
+          // Rarely inject sigils
+          const showSigil = Math.random() < 0.01;
+          if (showSigil) {
             cell.innerText = randomSigil();
             cell.classList.add('sigil');
           }
 
-          // Temporarily change to grey
-          cell.classList.add('trail');
+          // Apply mist pulse
+          cell.classList.add('pulse');
 
-          // Restore after short delay
+          // Revert after fade
           setTimeout(() => {
-            if (useSigil && isTop) {
+            if (showSigil) {
               cell.innerText = randomLetter();
               cell.classList.remove('sigil');
             }
-            cell.classList.remove('trail');
-          }, 300);
+            cell.classList.remove('pulse');
+          }, 800);
         }
-
-        drops[col] = (drop + 1) % rows;
       }
+
+      // Shift band left
+      currentCol = (currentCol - 1 + cols) % cols;
     }
 
-    setInterval(step, 120);
+    setInterval(mistStep, 180);
   </script>
 </body>
 </html>
