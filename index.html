@@ -69,7 +69,6 @@
       grid[5][1].dataset.locked = "true";
       grid[6][1].dataset.locked = "true";
       grid[7][1].dataset.locked = "true";
-      checkForWords(5, 1); // starting from first letter
 
       // 🔒 Vertical "SUN" at column 10, rows 1–3
       grid[10][1].innerText = "S";
@@ -78,18 +77,13 @@
       grid[10][1].dataset.locked = "true";
       grid[10][2].dataset.locked = "true";
       grid[10][3].dataset.locked = "true";
-      checkForWords(10, 3); // starting from bottom of vertical word
     }
 
     function glowCells(cells) {
       console.log("✨ Glowing:", cells.map(c => c.innerText).join(''));
-      cells.forEach(c => {
-        c.classList.add('glow');
-      });
+      cells.forEach(c => c.classList.add('glow'));
       setTimeout(() => {
-        cells.forEach(c => {
-          c.classList.remove('glow');
-        });
+        cells.forEach(c => c.classList.remove('glow'));
       }, 1500);
     }
 
@@ -119,7 +113,18 @@
       }
     }
 
-    window.addEventListener("load", buildGrid);
+    window.addEventListener("load", () => {
+      buildGrid();
+
+      // 🔁 Continuous scan every 1 second
+      setInterval(() => {
+        for (let col = 0; col < cols; col++) {
+          for (let row = 0; row < rows; row++) {
+            checkForWords(col, row);
+          }
+        }
+      }, 1000);
+    });
   </script>
 </body>
 </html>
