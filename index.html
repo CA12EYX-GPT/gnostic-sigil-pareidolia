@@ -43,41 +43,17 @@
       color: #e91e63 !important;
       text-shadow: 0 0 6px #e91e63;
     }
-
-    .word-log {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      font-size: 0.75rem;
-      color: #00f0ff;
-      font-family: monospace;
-      opacity: 0.8;
-      pointer-events: none;
-    }
-
-    .word-entry {
-      animation: fadeOut 3s forwards;
-    }
-
-    @keyframes fadeOut {
-      0% { opacity: 1; }
-      80% { opacity: 1; }
-      100% { opacity: 0; transform: translateY(-10px); }
-    }
   </style>
 </head>
 <body>
   <div class="grid" id="grid"></div>
-  <div class="word-log" id="wordLog"></div>
   <script>
     const gridEl = document.getElementById('grid');
-    const logEl = document.getElementById('wordLog');
     const cols = 40;
     const rows = 30;
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
     const grid = [];
-
     const isDropping = Array.from({ length: cols }, () => Array(rows).fill(false));
 
     const wordList = new Set([
@@ -113,18 +89,10 @@
         }
       }
 
-      // Optional stooge word: SUN
+      // Optional stooge: SUN
       grid[1][1].innerText = "S";
       grid[2][1].innerText = "U";
       grid[3][1].innerText = "N";
-    }
-
-    function logWord(word) {
-      const div = document.createElement('div');
-      div.className = 'word-entry';
-      div.innerText = `✨ ${word}`;
-      logEl.appendChild(div);
-      setTimeout(() => div.remove(), 3000);
     }
 
     function isSafe(cells) {
@@ -144,7 +112,6 @@
 
     function checkForWords(col, row) {
       for (let len = 3; len <= 5; len++) {
-        // ✅ Only horizontal detection
         if (col + len <= cols) {
           const hCells = [];
           let hWord = '';
@@ -155,7 +122,6 @@
           }
           if (wordList.has(hWord) && isSafe(hCells)) {
             glowCells(hCells);
-            logWord(hWord);
           }
         }
       }
