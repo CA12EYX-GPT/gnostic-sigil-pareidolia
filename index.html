@@ -116,6 +116,7 @@
             vLetters.push(grid[col][vStart + i]);
           }
           const vWord = vLetters.map(c => c.innerText).join('');
+          console.log("Vertical check:", vWord);
           if (wordList.has(vWord)) glowCells(vLetters);
         }
 
