@@ -86,7 +86,7 @@
     function step() {
       for (let col = cols - 1; col >= 0; col--) {
         const drop = drops[col];
-
+ 
         for (let trail = 0; trail < 5; trail++) {
           const row = (drop - trail + rows) % rows;
           const cell = grid[col][row];
