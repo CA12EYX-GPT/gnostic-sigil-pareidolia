@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gnostic Sigil Pareidolia – Word Glow Patch</title>
+  <title>Gnostic Sigil Pareidolia – Dual Word Glow</title>
   <style>
     body {
       margin: 0;
@@ -21,7 +21,7 @@
       display: grid;
       grid-template-columns: repeat(40, 1fr);
       grid-template-rows: repeat(30, 1fr);
-      font-size: 1.5rem; /* Big and visible */
+      font-size: 1.5rem;
     }
 
     .cell {
@@ -62,15 +62,6 @@
         }
       }
 
-      // 🔒 Vertical "SUN" at column 2, rows 1–3
-      grid[2][1].innerText = "S";
-      grid[2][2].innerText = "U";
-      grid[2][3].innerText = "N";
-      grid[2][1].dataset.locked = "true";
-      grid[2][2].dataset.locked = "true";
-      grid[2][3].dataset.locked = "true";
-      checkForWords(2, 3);
-
       // 🔒 Horizontal "SUN" at row 1, columns 5–7
       grid[5][1].innerText = "S";
       grid[6][1].innerText = "U";
@@ -78,7 +69,16 @@
       grid[5][1].dataset.locked = "true";
       grid[6][1].dataset.locked = "true";
       grid[7][1].dataset.locked = "true";
-      checkForWords(5, 1); // ✅ START of word
+      checkForWords(5, 1); // starting from first letter
+
+      // 🔒 Vertical "SUN" at column 10, rows 1–3
+      grid[10][1].innerText = "S";
+      grid[10][2].innerText = "U";
+      grid[10][3].innerText = "N";
+      grid[10][1].dataset.locked = "true";
+      grid[10][2].dataset.locked = "true";
+      grid[10][3].dataset.locked = "true";
+      checkForWords(10, 3); // starting from bottom of vertical word
     }
 
     function glowCells(cells) {
@@ -95,7 +95,7 @@
 
     function checkForWords(col, row) {
       for (let len = 3; len <= 5; len++) {
-        // Vertical
+        // Vertical detection
         let vStart = row - len + 1;
         if (vStart >= 0 && vStart + len <= rows) {
           const vLetters = [];
@@ -106,7 +106,7 @@
           if (wordList.has(vWord)) glowCells(vLetters);
         }
 
-        // Horizontal
+        // Horizontal detection
         let hStart = col - len + 1;
         if (hStart >= 0 && hStart + len <= cols) {
           const hLetters = [];
