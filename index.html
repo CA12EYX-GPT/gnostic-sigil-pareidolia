@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gnostic Sigil Pareidolia – Dual Word Glow</title>
+  <title>Gnostic Sigil Pareidolia – Locked Word Glow</title>
   <style>
     body {
       margin: 0;
@@ -116,11 +116,14 @@
     window.addEventListener("load", () => {
       buildGrid();
 
-      // 🔁 Continuous scan every 1 second
+      // 🔁 Only scan locked-in words every 1 second
       setInterval(() => {
         for (let col = 0; col < cols; col++) {
           for (let row = 0; row < rows; row++) {
-            checkForWords(col, row);
+            const cell = grid[col][row];
+            if (cell.dataset.locked === "true") {
+              checkForWords(col, row);
+            }
           }
         }
       }, 1000);
