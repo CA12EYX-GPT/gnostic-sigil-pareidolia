@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gnostic Sigil Pareidolia (Debug)</title>
+  <title>Gnostic Sigil Pareidolia</title>
   <style>
     body {
       margin: 0;
@@ -50,6 +50,7 @@
 </head>
 <body>
   <div class="grid" id="grid"></div>
+
   <script>
     const gridEl = document.getElementById('grid');
     const cols = 40;
@@ -86,15 +87,21 @@
       grid[5][10].innerText = "S";
       grid[5][11].innerText = "U";
       grid[5][12].innerText = "N";
-
-      // Trigger detection manually
       checkForWords(5, 12);
     }
 
     function glowCells(cells) {
       console.log("✨ Glowing:", cells.map(c => c.innerText).join(''));
-      cells.forEach(c => c.classList.add('glow'));
-      setTimeout(() => cells.forEach(c => c.classList.remove('glow')), 1200);
+      cells.forEach(c => {
+        c.classList.add('glow');
+        c.dataset.locked = "true";
+      });
+      setTimeout(() => {
+        cells.forEach(c => {
+          c.classList.remove('glow');
+          delete c.dataset.locked;
+        });
+      }, 1200);
     }
 
     function checkForWords(col, row) {
@@ -107,7 +114,6 @@
             vLetters.push(grid[col][vStart + i]);
           }
           const vWord = vLetters.map(c => c.innerText).join('');
-          console.log("V-check:", vWord);
           if (wordList.has(vWord)) glowCells(vLetters);
         }
 
@@ -119,7 +125,6 @@
             hLetters.push(grid[hStart + i][row]);
           }
           const hWord = hLetters.map(c => c.innerText).join('');
-          console.log("H-check:", hWord);
           if (wordList.has(hWord)) glowCells(hLetters);
         }
       }
@@ -135,6 +140,8 @@
             const row = position - i;
             if (row >= 0 && row < rows) {
               const cell = grid[col][row];
+              if (cell.dataset.locked) continue;
+
               const isLead = i === 0;
               const showSigil = Math.random() < 0.03;
 
