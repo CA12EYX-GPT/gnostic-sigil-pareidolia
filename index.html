@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gnostic Sigil Pareidolia</title>
   <style>
     body {
@@ -13,11 +13,14 @@
     }
 
     .grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
       display: grid;
       grid-template-columns: repeat(40, 1fr);
       grid-template-rows: repeat(30, 1fr);
-      width: 100vw;
-      height: 100vh;
       font-size: 0.85rem;
     }
 
@@ -30,11 +33,6 @@
       transition: color 0.8s ease;
     }
 
-    .glow {
-      color: #00f0ff !important;
-      text-shadow: 0 0 8px #00f0ff;
-    }
-
     .trail {
       color: #888 !important;
     }
@@ -42,6 +40,11 @@
     .sigil {
       color: #e91e63 !important;
       text-shadow: 0 0 6px #e91e63;
+    }
+
+    .glow {
+      color: #00f0ff !important;
+      text-shadow: 0 0 8px #00f0ff;
     }
   </style>
 </head>
@@ -54,7 +57,6 @@
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
     const grid = [];
-    const isDropping = Array.from({ length: cols }, () => Array(rows).fill(false));
 
     const wordList = new Set([
       "AND", "ART", "EYE", "SUN", "FUN", "RUN", "YES", "YOU", "SEE", "END",
@@ -75,37 +77,16 @@
       return sigils[Math.floor(Math.random() * sigils.length)];
     }
 
-    function buildGrid() {
-      for (let col = 0; col < cols; col++) {
-        grid[col] = [];
-        for (let row = 0; row < rows; row++) {
-          const cell = document.createElement('div');
-          cell.className = 'cell';
-          cell.innerText = randomLetter();
-          cell.dataset.col = col;
-          cell.dataset.row = row;
-          grid[col][row] = cell;
-          gridEl.appendChild(cell);
-        }
-      }
-
-      // Optional stooge: SUN
-      grid[1][1].innerText = "S";
-      grid[2][1].innerText = "U";
-      grid[3][1].innerText = "N";
-    }
-
     function isSafe(cells) {
-      return cells.every(cell => {
-        const col = parseInt(cell.dataset.col);
-        const row = parseInt(cell.dataset.row);
-        return !isDropping[col][row];
-      });
+      return cells.every(c => !c.classList.contains('glow'));
     }
 
     function glowCells(cells) {
+      if (!cells || cells.length < 3) return;
+
       const word = cells.map(c => c.innerText).join('');
-      if (!wordList.has(word) || cells.length < 3) return;
+      if (!wordList.has(word) || word.length < 3 || word.length > 5) return;
+
       cells.forEach(c => c.classList.add('glow'));
       setTimeout(() => {
         cells.forEach(c => c.classList.remove('glow'));
@@ -129,8 +110,20 @@
       }
     }
 
-    function dropTrail(col) {
-      const dropLength = Math.floor(Math.random() * 5) + 5;
+    // Build grid
+    for (let col = 0; col < cols; col++) {
+      grid[col] = [];
+      for (let row = 0; row < rows; row++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.innerText = randomLetter();
+        grid[col][row] = cell;
+        gridEl.appendChild(cell);
+      }
+    }
+
+    function startDrop(col) {
+      const dropLength = Math.floor(Math.random() * 6) + 5;
       let position = 0;
 
       const interval = setInterval(() => {
@@ -140,9 +133,7 @@
             if (row >= 0 && row < rows) {
               const cell = grid[col][row];
               const isLead = i === 0;
-              const showSigil = Math.random() < 0.02;
-
-              isDropping[col][row] = true;
+              const showSigil = Math.random() < 0.025;
 
               if (isLead && showSigil) {
                 cell.innerText = randomSigil();
@@ -152,47 +143,38 @@
               }
 
               cell.classList.add('trail');
-
               setTimeout(() => {
                 if (isLead && showSigil) {
                   cell.innerText = randomLetter();
                   cell.classList.remove('sigil');
                 }
                 cell.classList.remove('trail');
-                isDropping[col][row] = false;
               }, 800);
             }
           }
+
+          if (position < rows) {
+            checkForWords(col, position);
+          }
+
           position++;
         } else {
           clearInterval(interval);
         }
-      }, 90);
+      }, 100);
     }
 
-    function triggerDrops() {
-      const activeCols = [...Array(cols).keys()];
-      const numDrops = Math.floor(Math.random() * 4) + 2;
-      for (let i = 0; i < numDrops; i++) {
-        const col = activeCols.splice(Math.floor(Math.random() * activeCols.length), 1)[0];
-        dropTrail(col);
+    function triggerRandomDrops() {
+      const num = Math.floor(Math.random() * 4) + 2;
+      const availableCols = [...Array(cols).keys()];
+      for (let i = 0; i < num; i++) {
+        const index = Math.floor(Math.random() * availableCols.length);
+        const col = availableCols.splice(index, 1)[0];
+        startDrop(col);
       }
     }
 
-    window.addEventListener("load", () => {
-      buildGrid();
-
-      setInterval(() => {
-        triggerDrops();
-        setTimeout(() => {
-          for (let col = 0; col < cols; col++) {
-            for (let row = 0; row < rows; row++) {
-              checkForWords(col, row);
-            }
-          }
-        }, 400);
-      }, 1000);
-    });
+    setInterval(triggerRandomDrops, 400);
   </script>
 </body>
 </html>
