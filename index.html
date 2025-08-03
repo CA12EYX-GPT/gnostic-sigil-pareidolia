@@ -52,23 +52,34 @@
 
     const wordList = new Set(["SUN", "SEA", "SKY", "RUN", "FUN", "ART"]);
 
-    function buildGrid() {
-      for (let col = 0; col < cols; col++) {
-        grid[col] = [];
-        for (let row = 0; row < rows; row++) {
-          const cell = document.createElement('div');
-          cell.className = 'cell';
-          cell.innerText = letters.charAt(Math.floor(Math.random() * letters.length));
+function buildGrid() {
+  for (let col = 0; col < cols; col++) {
+    grid[col] = [];
+    for (let row = 0; row < rows; row++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.innerText = letters.charAt(Math.floor(Math.random() * letters.length));
 
-          // Set visual placement using CSS variables
-          cell.style.setProperty('--col', col + 1);
-          cell.style.setProperty('--row', row + 1);
+      // Set visual placement using CSS variables
+      cell.style.setProperty('--col', col + 1);
+      cell.style.setProperty('--row', row + 1);
 
-          grid[col][row] = cell;
-          gridEl.appendChild(cell);
-        }
-      }
+      grid[col][row] = cell;
+      gridEl.appendChild(cell);
     }
+  }
+
+  // 🔒 Stooge horizontal SUN at row 1, cols 5–7
+  grid[5][1].innerText = "S";
+  grid[6][1].innerText = "U";
+  grid[7][1].innerText = "N";
+
+  // 🔒 Stooge vertical SUN at col 10, rows 1–3
+  grid[10][1].innerText = "S";
+  grid[10][2].innerText = "U";
+  grid[10][3].innerText = "N";
+}
+
 
     function glowCells(cells) {
       const word = cells.map(c => c.innerText).join('');
