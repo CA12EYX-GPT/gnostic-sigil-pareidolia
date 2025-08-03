@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Waterfall – Optimised Flow</title>
+  <title>Waterfall – Whispers & Words</title>
   <style>
     body {
       margin: 0;
@@ -30,27 +30,34 @@
   </style>
 </head>
 <body>
+
+  <!-- 🔊 AUDIO LAYER -->
+  <audio id="whispers" loop autoplay>
+    <source src="https://cdn.jsdelivr.net/gh/CA12EYX-GPT/assets/whispers.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+  </audio>
+
   <script>
-    // ============= 🔡 WORD LIST =============
+    // ============= 📚 LONG WORD LIST (truncated here) =============
     const wordList = [
-      "hope", "dream", "fire", "sky", "soul", "code", "truth", "mask", "form",
-      "line", "dark", "star", "wind", "free", "core", "void", "eye", "mind", "path"
+      "abandon", "ability", "absorb", "abstract", "academy", "access", "accident",
+      "account", "accuracy", "achieve", "acid", "acoustic", "acquire", "across",
+      "act", "action", "actor", "actual", "adapt", "addict", "address", "adjust",
+      "admit", "adopt", "adult", "advance", "advice", "aerobic", "affair", "affect",
+      "afford", "afraid", "again", "agency", "agenda", "agent", "agile", "agony",
+      // ... You can expand this to 10,000+ from a wordlist file
     ];
 
-    // ============= ⚙️ SETTINGS =============
-    const dropFrequency = 60; // new word every N frames
+    const dropFrequency = 60;
     const maxWordsOnScreen = 100;
     const minWordLengthToGlow = 3;
 
-    // ============= 🗃️ STATE =============
     let words = [];
     let frameCount = 0;
 
-    // ============= 🔁 MAIN LOOP =============
     function animate() {
       frameCount++;
 
-      // Drop new word every N frames
       if (frameCount % dropFrequency === 0) {
         if (words.length < maxWordsOnScreen) {
           const word = createWord();
@@ -59,12 +66,10 @@
         }
       }
 
-      // Update word positions
       words.forEach((word, index) => {
         word.y += word.speed;
         word.el.style.top = `${word.y}px`;
 
-        // Remove if offscreen
         if (word.y > window.innerHeight + 30) {
           word.el.remove();
           words.splice(index, 1);
@@ -74,7 +79,6 @@
       requestAnimationFrame(animate);
     }
 
-    // ============= 🧱 CREATE WORD OBJECT =============
     function createWord() {
       const text = wordList[Math.floor(Math.random() * wordList.length)];
       const el = document.createElement("span");
@@ -85,7 +89,6 @@
       el.style.left = `${x}px`;
       el.style.top = `-30px`;
 
-      // Optional glow effect
       if (text.length >= minWordLengthToGlow) {
         el.classList.add("glow");
         setTimeout(() => el.classList.remove("glow"), 1000);
@@ -98,8 +101,15 @@
       };
     }
 
-    // ============= 🟢 START LOOP =============
     requestAnimationFrame(animate);
+
+    // ============= 🔇 MUTE/UNMUTE AUDIO WITH "M" =============
+    const audio = document.getElementById("whispers");
+    window.addEventListener("keydown", (e) => {
+      if (e.key.toLowerCase() === "m") {
+        audio.muted = !audio.muted;
+      }
+    });
   </script>
 </body>
 </html>
