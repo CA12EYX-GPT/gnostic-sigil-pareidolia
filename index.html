@@ -30,15 +30,10 @@
       user-select: none;
       opacity: 0.9;
       color: #eaeaea;
-      transition: opacity 0.3s ease, color 0.3s ease;
+      transition: color 0.3s ease;
     }
-
-    .cell.fade {
-      opacity: 0;
-    }
-
     .sigil {
-      color: #e91e63; /* mystic pink */
+      color: #e91e63;
       text-shadow: 0 0 6px #e91e63;
     }
   </style>
@@ -76,17 +71,12 @@
       gridEl.appendChild(createCell(col, row));
     }
 
-    // Animate
+    // Animate (no fade, just fast switch)
     setInterval(() => {
       document.querySelectorAll('.cell').forEach(cell => {
         const isSigil = Math.random() < 0.01;
-
-        cell.classList.add('fade');
-        setTimeout(() => {
-          cell.innerText = isSigil ? randomSigil() : randomLetter();
-          cell.classList.remove('fade');
-          cell.classList.toggle('sigil', isSigil);
-        }, 150);
+        cell.innerText = isSigil ? randomSigil() : randomLetter();
+        cell.classList.toggle('sigil', isSigil);
       });
     }, 180);
   </script>
