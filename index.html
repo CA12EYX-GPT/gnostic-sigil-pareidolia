@@ -13,15 +13,12 @@
     }
 
     .grid {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
       display: grid;
       grid-template-columns: repeat(40, 1fr);
       grid-template-rows: repeat(30, 1fr);
-      font-size: 1.5rem;
+      width: 100vw;
+      height: 100vh;
+      font-size: 0.85rem;
     }
 
     .cell {
@@ -31,13 +28,20 @@
       user-select: none;
       color: #eaeaea;
       transition: color 0.8s ease;
-      grid-column-start: var(--col);
-      grid-row-start: var(--row);
     }
 
     .glow {
       color: #00f0ff !important;
       text-shadow: 0 0 8px #00f0ff;
+    }
+
+    .trail {
+      color: #888 !important;
+    }
+
+    .sigil {
+      color: #e91e63 !important;
+      text-shadow: 0 0 6px #e91e63;
     }
   </style>
 </head>
@@ -48,9 +52,22 @@
     const cols = 40;
     const rows = 30;
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
     const grid = [];
 
-    const wordList = new Set(["SUN", "SEA", "SKY", "RUN", "FUN", "ART"]);
+    const wordList = new Set([
+      "SUN", "SEA", "SKY", "RUN", "FUN", "ART", "AND", "EYE", "YOU",
+      "TIME", "LOVE", "SOUL", "MIND", "GLOW", "STAR", "WISH", "RING",
+      "LIGHT", "TRUTH", "SIGIL", "ALIGN", "SIGHT", "UNITY", "VOICE", "SHIFT"
+    ]);
+
+    function randomLetter() {
+      return letters.charAt(Math.floor(Math.random() * letters.length));
+    }
+
+    function randomSigil() {
+      return sigils[Math.floor(Math.random() * sigils.length)];
+    }
 
     function buildGrid() {
       for (let col = 0; col < cols; col++) {
@@ -58,25 +75,23 @@
         for (let row = 0; row < rows; row++) {
           const cell = document.createElement('div');
           cell.className = 'cell';
-          cell.innerText = letters.charAt(Math.floor(Math.random() * letters.length));
-          cell.style.setProperty('--col', col + 1);
-          cell.style.setProperty('--row', row + 1);
+          cell.innerText = randomLetter();
           grid[col][row] = cell;
           gridEl.appendChild(cell);
         }
       }
 
-      // Optional stooge words (keep or remove)
+      // Optional stooge word: SUN
       grid[1][1].innerText = "S";
       grid[2][1].innerText = "U";
       grid[3][1].innerText = "N";
+
       grid[1][2].innerText = "U";
       grid[1][3].innerText = "N";
     }
 
     function glowCells(cells) {
       const word = cells.map(c => c.innerText).join('');
-      console.log("✨ Word:", word);
       cells.forEach(c => c.classList.add('glow'));
       setTimeout(() => {
         cells.forEach(c => c.classList.remove('glow'));
@@ -88,9 +103,7 @@
         // Vertical
         if (row + len <= rows) {
           const vCells = [];
-          for (let i = 0; i < len; i++) {
-            vCells.push(grid[col][row + i]);
-          }
+          for (let i = 0; i < len; i++) vCells.push(grid[col][row + i]);
           const vWord = vCells.map(c => c.innerText).join('');
           if (wordList.has(vWord)) glowCells(vCells);
         }
@@ -98,20 +111,64 @@
         // Horizontal
         if (col + len <= cols) {
           const hCells = [];
-          for (let i = 0; i < len; i++) {
-            hCells.push(grid[col + i][row]);
-          }
+          for (let i = 0; i < len; i++) hCells.push(grid[col + i][row]);
           const hWord = hCells.map(c => c.innerText).join('');
           if (wordList.has(hWord)) glowCells(hCells);
         }
       }
     }
 
+    function dropTrail(col) {
+      const dropLength = Math.floor(Math.random() * 5) + 5;
+      let position = 0;
+
+      const interval = setInterval(() => {
+        if (position < rows + dropLength) {
+          for (let i = 0; i < dropLength; i++) {
+            const row = position - i;
+            if (row >= 0 && row < rows) {
+              const cell = grid[col][row];
+              const isLead = i === 0;
+              const showSigil = Math.random() < 0.02;
+
+              if (isLead && showSigil) {
+                cell.innerText = randomSigil();
+                cell.classList.add('sigil');
+              } else if (isLead) {
+                cell.innerText = randomLetter();
+              }
+
+              cell.classList.add('trail');
+              setTimeout(() => {
+                if (isLead && showSigil) {
+                  cell.innerText = randomLetter();
+                  cell.classList.remove('sigil');
+                }
+                cell.classList.remove('trail');
+              }, 800);
+            }
+          }
+          position++;
+        } else {
+          clearInterval(interval);
+        }
+      }, 90);
+    }
+
+    function triggerDrops() {
+      const activeCols = [...Array(cols).keys()];
+      const numDrops = Math.floor(Math.random() * 4) + 2;
+      for (let i = 0; i < numDrops; i++) {
+        const col = activeCols.splice(Math.floor(Math.random() * activeCols.length), 1)[0];
+        dropTrail(col);
+      }
+    }
+
     window.addEventListener("load", () => {
       buildGrid();
 
-      // Scan for words every second
       setInterval(() => {
+        triggerDrops();
         for (let col = 0; col < cols; col++) {
           for (let row = 0; row < rows; row++) {
             checkForWords(col, row);
