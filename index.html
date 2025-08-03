@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sigil Pareidolia - Waterfall</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0b0b0f;
+      overflow: hidden;
+      font-family: 'Courier New', Courier, monospace;
+      color: #eaeaea;
+    }
+    .grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      grid-template-rows: repeat(20, 1fr);
+      font-size: 1.2rem;
+    }
+    .cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="grid" id="grid"></div>
+  <script>
+    const gridEl = document.getElementById('grid');
+    const cols = 12;
+    const rows = 20;
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+    function randomLetter() {
+      return letters.charAt(Math.floor(Math.random() * letters.length));
+    }
+
+    function createCell(col, row) {
+      const div = document.createElement('div');
+      div.className = 'cell';
+      div.dataset.col = col;
+      div.dataset.row = row;
+      div.innerText = randomLetter();
+      return div;
+    }
+
+    // Create grid
+    for (let i = 0; i < cols * rows; i++) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      gridEl.appendChild(createCell(col, row));
+    }
+
+    // Animate
+    setInterval(() => {
+      document.querySelectorAll('.cell').forEach(cell => {
+        if (Math.random() < 0.01) {
+          // occasionally inject a sigil or real word letter
+          cell.innerText = Math.random() < 0.5 ? '◉' : '∆';
+        } else {
+          cell.innerText = randomLetter();
+        }
+      });
+    }, 120);
+  </script>
+</body>
+</html>
