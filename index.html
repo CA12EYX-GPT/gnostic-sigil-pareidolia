@@ -104,6 +104,8 @@
     }
 
     function glowCells(cells) {
+      const word = cells.map(c => c.innerText).join('');
+      if (!wordList.has(word) || cells.length < 3) return;
       cells.forEach(c => c.classList.add('glow'));
       setTimeout(() => {
         cells.forEach(c => c.classList.remove('glow'));
