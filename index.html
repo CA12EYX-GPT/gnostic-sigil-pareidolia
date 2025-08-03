@@ -31,8 +31,12 @@
       justify-content: center;
       user-select: none;
       opacity: 0;
-      color: #eaeaea;
-      transition: opacity 0.2s linear;
+      color: #eaeaea; /* default white */
+      transition: opacity 0.2s linear, color 0.4s ease;
+    }
+
+    .trail {
+      color: #888; /* grey while in trail */
     }
 
     .sigil {
@@ -92,6 +96,12 @@
           cell.innerText = useSigil && trail === 0 ? randomSigil() : randomLetter();
           cell.style.opacity = intensity;
           cell.classList.toggle('sigil', useSigil && trail === 0);
+          cell.classList.add('trail');
+
+          // Remove grey trail color after short delay
+          setTimeout(() => {
+            cell.classList.remove('trail');
+          }, 300);
         }
 
         drops[col] = (drop + 1) % rows;
