@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Waterfall – Dictionary + Whispers</title>
+  <title>Waterfall – Gnostic Sigil Pareidolia</title>
   <style>
     body {
       margin: 0;
@@ -47,14 +47,14 @@
 </head>
 <body>
 
-  <!-- 🔊 Whisper Audio -->
+  <!-- Whisper Audio -->
   <audio id="whispers" loop autoplay>
     <source src="https://cdn.jsdelivr.net/gh/CA12EYX-GPT/assets/whispers.mp3" type="audio/mpeg">
     Your browser does not support the audio element.
   </audio>
 
-  <!-- 🔄 Loading screen -->
-  <div id="loading">Loading dictionary…</div>
+  <!-- Loading overlay -->
+  <div id="loading">Loading words...</div>
 
   <script>
     let wordList = [];
@@ -63,26 +63,33 @@
 
     const dropFrequency = 60;
     const maxWordsOnScreen = 100;
-    const minWordLengthToGlow = 3;
+    const minWordLength = 3;
 
-    // Load dictionary from local file
+    // 🎯 Load dictionary.txt
     fetch('dictionary.txt')
-      .then(res => res.text())
+      .then(res => {
+        if (!res.ok) throw new Error("Dictionary not found");
+        return res.text();
+      })
       .then(text => {
         wordList = text
           .split('\n')
-          .map(w => w.trim())
-          .filter(w => w.length >= minWordLengthToGlow);
+          .map(w => w.trim().toLowerCase())
+          .filter((w, i, arr) => w.length >= minWordLength && arr.indexOf(w) === i);
 
-        console.log(`Loaded ${wordList.length} words`);
+        console.log(`✅ Loaded ${wordList.length} unique words`);
         document.getElementById('loading').remove();
         requestAnimationFrame(animate);
+      })
+      .catch(err => {
+        document.getElementById('loading').textContent = '❌ Failed to load dictionary.';
+        console.error("Word load error:", err);
       });
 
     function animate() {
       frameCount++;
 
-      if (frameCount % dropFrequency === 0) {
+      if (frameCount % dropFrequency === 0 && wordList.length > 0) {
         if (words.length < maxWordsOnScreen) {
           const word = createWord();
           words.push(word);
@@ -109,13 +116,10 @@
       el.classList.add("word");
       el.textContent = text;
 
-      const x = Math.random() * window.innerWidth;
-      el.style.left = `${x}px`;
+      el.style.left = `${Math.random() * window.innerWidth}px`;
       el.style.top = `-30px`;
 
-      el.y = -30;
-
-      if (text.length >= minWordLengthToGlow) {
+      if (text.length >= minWordLength) {
         el.classList.add("glow");
         setTimeout(() => el.classList.remove("glow"), 1000);
       }
@@ -127,11 +131,12 @@
       };
     }
 
-    // Mute toggle
+    // 🎧 Mute toggle: Press "M"
     const audio = document.getElementById("whispers");
     window.addEventListener("keydown", (e) => {
       if (e.key.toLowerCase() === "m") {
         audio.muted = !audio.muted;
+        console.log(`Audio ${audio.muted ? 'muted' : 'unmuted'}`);
       }
     });
   </script>
