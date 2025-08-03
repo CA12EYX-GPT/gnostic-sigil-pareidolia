@@ -43,19 +43,43 @@
       color: #e91e63 !important;
       text-shadow: 0 0 6px #e91e63;
     }
+
+    .word-log {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 0.75rem;
+      color: #00f0ff;
+      font-family: monospace;
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .word-entry {
+      animation: fadeOut 3s forwards;
+    }
+
+    @keyframes fadeOut {
+      0% { opacity: 1; }
+      80% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-10px); }
+    }
   </style>
 </head>
 <body>
   <div class="grid" id="grid"></div>
+  <div class="word-log" id="wordLog"></div>
   <script>
     const gridEl = document.getElementById('grid');
+    const logEl = document.getElementById('wordLog');
     const cols = 40;
     const rows = 30;
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
     const grid = [];
 
-    const isColumnDropping = new Array(cols).fill(false); // per column flag
+    const isColumnDropping = new Array(cols).fill(false);
+    const isDropping = Array.from({ length: cols }, () => Array(rows).fill(false));
 
     const wordList = new Set([
       "AND", "ART", "EYE", "SUN", "FUN", "RUN", "YES", "YOU", "SEE", "END",
@@ -83,52 +107,65 @@
           const cell = document.createElement('div');
           cell.className = 'cell';
           cell.innerText = randomLetter();
+          cell.dataset.col = col;
+          cell.dataset.row = row;
           grid[col][row] = cell;
           gridEl.appendChild(cell);
         }
       }
 
-      // Stooge: SUN
+      // Optional stooge word: SUN
       grid[1][1].innerText = "S";
       grid[2][1].innerText = "U";
       grid[3][1].innerText = "N";
     }
 
+    function logWord(word) {
+      const div = document.createElement('div');
+      div.className = 'word-entry';
+      div.innerText = `✨ ${word}`;
+      logEl.appendChild(div);
+      setTimeout(() => div.remove(), 3000);
+    }
+
+    function isSafe(cells) {
+      return cells.every(cell => {
+        const col = parseInt(cell.dataset.col);
+        const row = parseInt(cell.dataset.row);
+        return !isDropping[col][row];
+      });
+    }
+
     function glowCells(cells) {
-      cells.forEach(c => c.classList.add('glow'));
-      setTimeout(() => {
-        cells.forEach(c => c.classList.remove('glow'));
-      }, 1500);
+      const word = cells.map(c => c.innerText).join('');
+      if (wordList.has(word) && isSafe(cells)) {
+        logWord(word);
+        cells.forEach(c => c.classList.add('glow'));
+        setTimeout(() => {
+          cells.forEach(c => c.classList.remove('glow'));
+        }, 1500);
+      }
     }
 
     function checkForWords(col, row) {
       for (let len = 3; len <= 5; len++) {
-
-        // --- Horizontal only ---
+        // Horizontal
         if (col + len <= cols) {
           const hCells = [];
-          let hWord = '';
           for (let i = 0; i < len; i++) {
-            const cell = grid[col + i][row];
-            hCells.push(cell);
-            hWord += cell.innerText;
+            hCells.push(grid[col + i][row]);
           }
-          if (wordList.has(hWord)) glowCells(hCells);
+          glowCells(hCells);
         }
 
-        // --- Vertical temporarily disabled to prevent false positives ---
-        /*
-        if (!isColumnDropping[col] && row + len <= rows) {
+        // Vertical
+        if (row + len <= rows) {
           const vCells = [];
-          let vWord = '';
           for (let i = 0; i < len; i++) {
-            const cell = grid[col][row + i];
-            vCells.push(cell);
-            vWord += cell.innerText;
+            vCells.push(grid[col][row + i]);
           }
-          if (wordList.has(vWord)) glowCells(vCells);
+          glowCells(vCells);
         }
-        */
       }
     }
 
@@ -146,6 +183,8 @@
               const isLead = i === 0;
               const showSigil = Math.random() < 0.02;
 
+              isDropping[col][row] = true;
+
               if (isLead && showSigil) {
                 cell.innerText = randomSigil();
                 cell.classList.add('sigil');
@@ -161,6 +200,7 @@
                   cell.classList.remove('sigil');
                 }
                 cell.classList.remove('trail');
+                isDropping[col][row] = false;
               }, 800);
             }
           }
