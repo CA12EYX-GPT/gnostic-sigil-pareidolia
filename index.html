@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gnostic Sigil Pareidolia – Real Word Detection</title>
+  <title>Gnostic Sigil Pareidolia – True Word Glow</title>
   <style>
     body {
       margin: 0;
@@ -31,6 +31,8 @@
       user-select: none;
       color: #eaeaea;
       transition: color 0.8s ease;
+      grid-column-start: var(--col);
+      grid-row-start: var(--row);
     }
 
     .glow {
@@ -48,7 +50,6 @@
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const grid = [];
 
-    // Add more words here
     const wordList = new Set(["SUN", "SEA", "SKY", "RUN", "FUN", "ART"]);
 
     function buildGrid() {
@@ -58,6 +59,11 @@
           const cell = document.createElement('div');
           cell.className = 'cell';
           cell.innerText = letters.charAt(Math.floor(Math.random() * letters.length));
+
+          // Set visual placement using CSS variables
+          cell.style.setProperty('--col', col + 1);
+          cell.style.setProperty('--row', row + 1);
+
           grid[col][row] = cell;
           gridEl.appendChild(cell);
         }
