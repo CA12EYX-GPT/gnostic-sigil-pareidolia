@@ -3,29 +3,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Waterfall – Gnostic Sigil Pareidolia</title>
+  <title>Sigil Grid – Gnostic Pareidolia</title>
   <style>
     body {
       margin: 0;
       background: #000;
       font-family: monospace;
       overflow: hidden;
+      color: #0ff;
     }
 
-    .word {
-      position: absolute;
-      white-space: nowrap;
-      font-size: 1.5rem;
-      color: #0ff;
-      opacity: 0.8;
-      pointer-events: none;
-      transition: all 0.3s ease;
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(40, 1fr);
+      width: 100vw;
+      height: 100vh;
+      padding: 10px;
+      box-sizing: border-box;
+      align-content: center;
+      justify-items: center;
+    }
+
+    .char {
+      font-size: 1.2rem;
+      line-height: 1.2;
+      opacity: 0.6;
+      transition: color 0.3s, text-shadow 0.3s;
     }
 
     .glow {
       color: teal;
       text-shadow: 0 0 8px teal;
       font-weight: bold;
+      opacity: 1;
     }
 
     #loading {
@@ -34,117 +44,86 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: #000;
+      background: black;
       color: #0ff;
-      font-size: 2rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: monospace;
+      font-size: 2rem;
       z-index: 10;
     }
   </style>
 </head>
 <body>
 
-  <!-- 🔊 Whisper Audio -->
-  <audio id="whispers" loop autoplay>
-    <source src="https://cdn.jsdelivr.net/gh/CA12EYX-GPT/assets/whispers.mp3" type="audio/mpeg">
-    Your browser does not support the audio element.
-  </audio>
+<div id="loading">Loading words...</div>
+<audio id="whispers" loop autoplay>
+  <source src="https://cdn.jsdelivr.net/gh/CA12EYX-GPT/assets/whispers.mp3" type="audio/mpeg">
+</audio>
 
-  <!-- ⏳ Loading overlay -->
-  <div id="loading">Loading words...</div>
+<div class="grid" id="grid"></div>
 
-  <script>
-    let wordList = [];
-    let words = [];
-    let frameCount = 0;
+<script>
+  const gridElement = document.getElementById("grid");
+  const rows = 20;
+  const cols = 40;
+  const gridChars = [];
+  const dictionaryUrl = "https://raw.githubusercontent.com/CA12EYX-GPT/gnostic-sigil-pareidolia/main/dictionary.txt";
 
-    const dropFrequency = 60;
-    const maxWordsOnScreen = 100;
-    const minWordLength = 3;
-
-    // ✅ Load dictionary from your GitHub Pages
-    fetch('dictionary.txt')
-      .then(res => {
-        if (!res.ok) throw new Error("Dictionary not found");
-        return res.text();
-      })
-      .then(text => {
-        wordList = text
-          .split('\n')
-          .map(w => w.trim().toLowerCase())
-          .filter((w, i, arr) => w.length >= minWordLength && arr.indexOf(w) === i);
-
-        console.log(`✅ Loaded ${wordList.length} words`);
-        document.getElementById('loading').remove();
-        requestAnimationFrame(animate);
-      })
-      .catch(err => {
-        const loadingDiv = document.getElementById('loading');
-        loadingDiv.textContent = '❌ Failed to load dictionary.';
-        loadingDiv.style.color = 'red';
-        console.error("Word load error:", err);
-      });
-
-    // 🌊 Main animation loop
-    function animate() {
-      frameCount++;
-
-      if (frameCount % dropFrequency === 0 && wordList.length > 0) {
-        if (words.length < maxWordsOnScreen) {
-          const word = createWord();
-          words.push(word);
-          document.body.appendChild(word.el);
-        }
-      }
-
-      words.forEach((word, index) => {
-        word.y += word.speed;
-        word.el.style.top = `${word.y}px`;
-
-        if (word.y > window.innerHeight + 30) {
-          word.el.remove();
-          words.splice(index, 1);
-        }
-      });
-
-      requestAnimationFrame(animate);
+  // Generate static character grid
+  for (let r = 0; r < rows; r++) {
+    gridChars[r] = [];
+    for (let c = 0; c < cols; c++) {
+      const ch = String.fromCharCode(97 + Math.floor(Math.random() * 26));
+      const span = document.createElement("span");
+      span.className = "char";
+      span.textContent = ch;
+      gridElement.appendChild(span);
+      gridChars[r][c] = span;
     }
+  }
 
-    // 🧱 Create falling word
-    function createWord() {
-      const text = wordList[Math.floor(Math.random() * wordList.length)];
-      const el = document.createElement("span");
-      el.classList.add("word");
-      el.textContent = text;
+  let wordList = [];
 
-      // Safe horizontal placement
-      const maxX = Math.max(window.innerWidth - 120, 0);
-      el.style.left = Math.floor(Math.random() * maxX) + "px";
-      el.style.top = `-30px`;
-
-      if (text.length >= minWordLength) {
-        el.classList.add("glow");
-        setTimeout(() => el.classList.remove("glow"), 1000);
-      }
-
-      return {
-        el,
-        y: -30,
-        speed: 1 + Math.random() * 2
-      };
-    }
-
-    // 🔇 Press M to mute/unmute whispers
-    const audio = document.getElementById("whispers");
-    window.addEventListener("keydown", (e) => {
-      if (e.key.toLowerCase() === "m") {
-        audio.muted = !audio.muted;
-        console.log(`Audio ${audio.muted ? 'muted' : 'unmuted'}`);
-      }
+  fetch(dictionaryUrl)
+    .then(res => res.text())
+    .then(text => {
+      wordList = text.split("\n").map(w => w.trim().toLowerCase()).filter(w => w.length >= 3);
+      document.getElementById("loading").remove();
+      startHighlightLoop();
+    })
+    .catch(err => {
+      document.getElementById("loading").textContent = "❌ Failed to load dictionary.";
+      console.error(err);
     });
-  </script>
+
+  function startHighlightLoop() {
+    setInterval(() => {
+      for (let r = 0; r < rows; r++) {
+        const line = gridChars[r].map(span => span.textContent).join("");
+        wordList.forEach(word => {
+          const i = line.indexOf(word);
+          if (i !== -1) {
+            for (let j = 0; j < word.length; j++) {
+              const char = gridChars[r][i + j];
+              char.classList.add("glow");
+              setTimeout(() => char.classList.remove("glow"), 1000);
+            }
+          }
+        });
+      }
+    }, 2000);
+  }
+
+  // 🔇 Press "M" to mute
+  const audio = document.getElementById("whispers");
+  window.addEventListener("keydown", (e) => {
+    if (e.key.toLowerCase() === "m") {
+      audio.muted = !audio.muted;
+      console.log(`Audio ${audio.muted ? "muted" : "unmuted"}`);
+    }
+  });
+</script>
+
 </body>
 </html>
