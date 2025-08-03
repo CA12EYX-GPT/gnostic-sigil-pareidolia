@@ -51,7 +51,6 @@
     const sigils = ['◉', '∆', '⟁', '✶'];
     const grid = [];
 
-    // Helper functions
     function randomLetter() {
       return letters.charAt(Math.floor(Math.random() * letters.length));
     }
@@ -81,7 +80,7 @@
     const drops = new Array(cols).fill(0).map(() => Math.floor(Math.random() * rows));
 
     function step() {
-      for (let col = 0; col < cols; col++) {
+      for (let col = cols - 1; col >= 0; col--) {
         const drop = drops[col];
 
         for (let trail = 0; trail < 5; trail++) {
