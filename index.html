@@ -78,7 +78,6 @@
     const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
     const grid = [];
 
-    const isColumnDropping = new Array(cols).fill(false);
     const isDropping = Array.from({ length: cols }, () => Array(rows).fill(false));
 
     const wordList = new Set([
@@ -145,7 +144,7 @@
 
     function checkForWords(col, row) {
       for (let len = 3; len <= 5; len++) {
-        // Horizontal
+        // ✅ Only horizontal detection
         if (col + len <= cols) {
           const hCells = [];
           let hWord = '';
@@ -159,28 +158,12 @@
             logWord(hWord);
           }
         }
-
-        // Vertical
-        if (row + len <= rows) {
-          const vCells = [];
-          let vWord = '';
-          for (let i = 0; i < len; i++) {
-            const cell = grid[col][row + i];
-            vWord += cell.innerText;
-            vCells.push(cell);
-          }
-          if (wordList.has(vWord) && isSafe(vCells)) {
-            glowCells(vCells);
-            logWord(vWord);
-          }
-        }
       }
     }
 
     function dropTrail(col) {
       const dropLength = Math.floor(Math.random() * 5) + 5;
       let position = 0;
-      isColumnDropping[col] = true;
 
       const interval = setInterval(() => {
         if (position < rows + dropLength) {
@@ -215,7 +198,6 @@
           position++;
         } else {
           clearInterval(interval);
-          isColumnDropping[col] = false;
         }
       }, 90);
     }
