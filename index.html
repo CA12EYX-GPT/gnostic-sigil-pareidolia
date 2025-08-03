@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sigil Pareidolia - Waterfall</title>
+  <title>Gnostic Sigil Pareidolia</title>
   <style>
     body {
       margin: 0;
@@ -19,9 +19,9 @@
       width: 100vw;
       height: 100vh;
       display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      grid-template-rows: repeat(20, 1fr);
-      font-size: 1.2rem;
+      grid-template-columns: repeat(16, 1fr); /* more columns */
+      grid-template-rows: repeat(24, 1fr);    /* more rows */
+      font-size: 0.9rem; /* slightly smaller text */
     }
     .cell {
       display: flex;
@@ -36,8 +36,8 @@
   <div class="grid" id="grid"></div>
   <script>
     const gridEl = document.getElementById('grid');
-    const cols = 12;
-    const rows = 20;
+    const cols = 16;
+    const rows = 24;
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
     function randomLetter() {
@@ -70,7 +70,7 @@
           cell.innerText = randomLetter();
         }
       });
-    }, 120);
+    }, 180); // slower refresh
   </script>
 </body>
 </html>
