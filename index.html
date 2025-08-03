@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gnostic Sigil Pareidolia – Locked Word Glow</title>
+  <title>Gnostic Sigil Pareidolia – Real Word Detection</title>
   <style>
     body {
       margin: 0;
@@ -48,7 +48,8 @@
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const grid = [];
 
-    const wordList = new Set(["SUN"]);
+    // Add more words here
+    const wordList = new Set(["SUN", "SEA", "SKY", "RUN", "FUN", "ART"]);
 
     function buildGrid() {
       for (let col = 0; col < cols; col++) {
@@ -61,26 +62,11 @@
           gridEl.appendChild(cell);
         }
       }
-
-      // 🔒 Horizontal "SUN" at row 1, columns 5–7
-      grid[5][1].innerText = "S";
-      grid[6][1].innerText = "U";
-      grid[7][1].innerText = "N";
-      grid[5][1].dataset.locked = "true";
-      grid[6][1].dataset.locked = "true";
-      grid[7][1].dataset.locked = "true";
-
-      // 🔒 Vertical "SUN" at column 10, rows 1–3
-      grid[10][1].innerText = "S";
-      grid[10][2].innerText = "U";
-      grid[10][3].innerText = "N";
-      grid[10][1].dataset.locked = "true";
-      grid[10][2].dataset.locked = "true";
-      grid[10][3].dataset.locked = "true";
     }
 
     function glowCells(cells) {
-      console.log("✨ Glowing:", cells.map(c => c.innerText).join(''));
+      const word = cells.map(c => c.innerText).join('');
+      console.log("✨ Word:", word);
       cells.forEach(c => c.classList.add('glow'));
       setTimeout(() => {
         cells.forEach(c => c.classList.remove('glow'));
@@ -89,26 +75,24 @@
 
     function checkForWords(col, row) {
       for (let len = 3; len <= 5; len++) {
-        // Vertical detection
-        let vStart = row - len + 1;
-        if (vStart >= 0 && vStart + len <= rows) {
-          const vLetters = [];
+        // Vertical
+        if (row + len <= rows) {
+          const vCells = [];
           for (let i = 0; i < len; i++) {
-            vLetters.push(grid[col][vStart + i]);
+            vCells.push(grid[col][row + i]);
           }
-          const vWord = vLetters.map(c => c.innerText).join('');
-          if (wordList.has(vWord)) glowCells(vLetters);
+          const vWord = vCells.map(c => c.innerText).join('');
+          if (wordList.has(vWord)) glowCells(vCells);
         }
 
-        // Horizontal detection
-        let hStart = col - len + 1;
-        if (hStart >= 0 && hStart + len <= cols) {
-          const hLetters = [];
+        // Horizontal
+        if (col + len <= cols) {
+          const hCells = [];
           for (let i = 0; i < len; i++) {
-            hLetters.push(grid[hStart + i][row]);
+            hCells.push(grid[col + i][row]);
           }
-          const hWord = hLetters.map(c => c.innerText).join('');
-          if (wordList.has(hWord)) glowCells(hLetters);
+          const hWord = hCells.map(c => c.innerText).join('');
+          if (wordList.has(hWord)) glowCells(hCells);
         }
       }
     }
@@ -116,14 +100,11 @@
     window.addEventListener("load", () => {
       buildGrid();
 
-      // 🔁 Only scan locked-in words every 1 second
+      // 🔁 Check every 1 second for clean adjacent word matches
       setInterval(() => {
         for (let col = 0; col < cols; col++) {
           for (let row = 0; row < rows; row++) {
-            const cell = grid[col][row];
-            if (cell.dataset.locked === "true") {
-              checkForWords(col, row);
-            }
+            checkForWords(col, row);
           }
         }
       }, 1000);
