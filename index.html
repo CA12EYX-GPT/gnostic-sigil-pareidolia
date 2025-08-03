@@ -19,9 +19,9 @@
       width: 100vw;
       height: 100vh;
       display: grid;
-      grid-template-columns: repeat(16, 1fr);
-      grid-template-rows: repeat(24, 1fr);
-      font-size: 0.9rem;
+      grid-template-columns: repeat(20, 1fr); /* more columns */
+      grid-template-rows: repeat(30, 1fr);    /* more rows */
+      font-size: 0.85rem; /* slightly smaller to fit */
     }
     .cell {
       display: flex;
@@ -42,8 +42,8 @@
   <div class="grid" id="grid"></div>
   <script>
     const gridEl = document.getElementById('grid');
-    const cols = 16;
-    const rows = 24;
+    const cols = 20;
+    const rows = 30;
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const sigils = ['◉', '∆', '⟁', '✶'];
 
@@ -71,14 +71,14 @@
       gridEl.appendChild(createCell(col, row));
     }
 
-    // Animate (no fade, just fast switch)
+    // Animate
     setInterval(() => {
       document.querySelectorAll('.cell').forEach(cell => {
         const isSigil = Math.random() < 0.01;
         cell.innerText = isSigil ? randomSigil() : randomLetter();
         cell.classList.toggle('sigil', isSigil);
       });
-    }, 180);
+    }, 280); // slowed update speed
   </script>
 </body>
 </html>
