@@ -137,14 +137,10 @@
     }
 
     function glowCells(cells) {
-      const word = cells.map(c => c.innerText).join('');
-      if (wordList.has(word) && isSafe(cells)) {
-        logWord(word);
-        cells.forEach(c => c.classList.add('glow'));
-        setTimeout(() => {
-          cells.forEach(c => c.classList.remove('glow'));
-        }, 1500);
-      }
+      cells.forEach(c => c.classList.add('glow'));
+      setTimeout(() => {
+        cells.forEach(c => c.classList.remove('glow'));
+      }, 1500);
     }
 
     function checkForWords(col, row) {
@@ -152,19 +148,31 @@
         // Horizontal
         if (col + len <= cols) {
           const hCells = [];
+          let hWord = '';
           for (let i = 0; i < len; i++) {
-            hCells.push(grid[col + i][row]);
+            const cell = grid[col + i][row];
+            hWord += cell.innerText;
+            hCells.push(cell);
           }
-          glowCells(hCells);
+          if (wordList.has(hWord) && isSafe(hCells)) {
+            glowCells(hCells);
+            logWord(hWord);
+          }
         }
 
         // Vertical
         if (row + len <= rows) {
           const vCells = [];
+          let vWord = '';
           for (let i = 0; i < len; i++) {
-            vCells.push(grid[col][row + i]);
+            const cell = grid[col][row + i];
+            vWord += cell.innerText;
+            vCells.push(cell);
           }
-          glowCells(vCells);
+          if (wordList.has(vWord) && isSafe(vCells)) {
+            glowCells(vCells);
+            logWord(vWord);
+          }
         }
       }
     }
