@@ -19,9 +19,9 @@
       width: 100vw;
       height: 100vh;
       display: grid;
-      grid-template-columns: repeat(16, 1fr); /* more columns */
-      grid-template-rows: repeat(24, 1fr);    /* more rows */
-      font-size: 0.9rem; /* slightly smaller text */
+      grid-template-columns: repeat(16, 1fr);
+      grid-template-rows: repeat(24, 1fr);
+      font-size: 0.9rem;
     }
     .cell {
       display: flex;
@@ -29,6 +29,17 @@
       justify-content: center;
       user-select: none;
       opacity: 0.9;
+      color: #eaeaea;
+      transition: opacity 0.3s ease, color 0.3s ease;
+    }
+
+    .cell.fade {
+      opacity: 0;
+    }
+
+    .sigil {
+      color: #e91e63; /* mystic pink */
+      text-shadow: 0 0 6px #e91e63;
     }
   </style>
 </head>
@@ -39,9 +50,14 @@
     const cols = 16;
     const rows = 24;
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const sigils = ['◉', '∆', '⟁', '✶'];
 
     function randomLetter() {
       return letters.charAt(Math.floor(Math.random() * letters.length));
+    }
+
+    function randomSigil() {
+      return sigils[Math.floor(Math.random() * sigils.length)];
     }
 
     function createCell(col, row) {
@@ -63,14 +79,16 @@
     // Animate
     setInterval(() => {
       document.querySelectorAll('.cell').forEach(cell => {
-        if (Math.random() < 0.01) {
-          // occasionally inject a sigil or real word letter
-          cell.innerText = Math.random() < 0.5 ? '◉' : '∆';
-        } else {
-          cell.innerText = randomLetter();
-        }
+        const isSigil = Math.random() < 0.01;
+
+        cell.classList.add('fade');
+        setTimeout(() => {
+          cell.innerText = isSigil ? randomSigil() : randomLetter();
+          cell.classList.remove('fade');
+          cell.classList.toggle('sigil', isSigil);
+        }, 150);
       });
-    }, 180); // slower refresh
+    }, 180);
   </script>
 </body>
 </html>
