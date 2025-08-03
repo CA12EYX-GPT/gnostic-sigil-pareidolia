@@ -12,6 +12,7 @@
       font-family: 'Courier New', Courier, monospace;
       color: #eaeaea;
     }
+
     .grid {
       position: absolute;
       top: 0;
@@ -19,19 +20,21 @@
       width: 100vw;
       height: 100vh;
       display: grid;
-      grid-template-columns: repeat(20, 1fr); /* more columns */
-      grid-template-rows: repeat(30, 1fr);    /* more rows */
-      font-size: 0.85rem; /* slightly smaller to fit */
+      grid-template-columns: repeat(20, 1fr);
+      grid-template-rows: repeat(30, 1fr);
+      font-size: 0.85rem;
     }
+
     .cell {
       display: flex;
       align-items: center;
       justify-content: center;
       user-select: none;
-      opacity: 0.9;
+      opacity: 0;
       color: #eaeaea;
-      transition: color 0.3s ease;
+      transition: opacity 0.2s linear;
     }
+
     .sigil {
       color: #e91e63;
       text-shadow: 0 0 6px #e91e63;
@@ -46,7 +49,9 @@
     const rows = 30;
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const sigils = ['◉', '∆', '⟁', '✶'];
+    const grid = [];
 
+    // Helper functions
     function randomLetter() {
       return letters.charAt(Math.floor(Math.random() * letters.length));
     }
@@ -55,30 +60,46 @@
       return sigils[Math.floor(Math.random() * sigils.length)];
     }
 
-    function createCell(col, row) {
-      const div = document.createElement('div');
-      div.className = 'cell';
-      div.dataset.col = col;
-      div.dataset.row = row;
-      div.innerText = randomLetter();
-      return div;
+    function isSigil() {
+      return Math.random() < 0.01;
     }
 
     // Create grid
-    for (let i = 0; i < cols * rows; i++) {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      gridEl.appendChild(createCell(col, row));
+    for (let col = 0; col < cols; col++) {
+      grid[col] = [];
+      for (let row = 0; row < rows; row++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.col = col;
+        cell.dataset.row = row;
+        grid[col][row] = cell;
+        gridEl.appendChild(cell);
+      }
     }
 
-    // Animate
-    setInterval(() => {
-      document.querySelectorAll('.cell').forEach(cell => {
-        const isSigil = Math.random() < 0.01;
-        cell.innerText = isSigil ? randomSigil() : randomLetter();
-        cell.classList.toggle('sigil', isSigil);
-      });
-    }, 280); // slowed update speed
+    // Drop state per column
+    const drops = new Array(cols).fill(0).map(() => Math.floor(Math.random() * rows));
+
+    function step() {
+      for (let col = 0; col < cols; col++) {
+        const drop = drops[col];
+
+        for (let trail = 0; trail < 5; trail++) {
+          const row = (drop - trail + rows) % rows;
+          const cell = grid[col][row];
+          const intensity = 1 - trail * 0.2;
+          const useSigil = isSigil();
+
+          cell.innerText = useSigil && trail === 0 ? randomSigil() : randomLetter();
+          cell.style.opacity = intensity;
+          cell.classList.toggle('sigil', useSigil && trail === 0);
+        }
+
+        drops[col] = (drop + 1) % rows;
+      }
+    }
+
+    setInterval(step, 120);
   </script>
 </body>
 </html>
