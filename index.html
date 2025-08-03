@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Waterfall – Gnostic Sigil Pareidolia</title>
+  <title>Waterfall – Optimised Flow</title>
   <style>
     body {
       margin: 0;
       background: #000;
-      color: #0ff;
       font-family: monospace;
       overflow: hidden;
     }
@@ -17,6 +16,7 @@
       position: absolute;
       white-space: nowrap;
       font-size: 1.5rem;
+      color: #0ff;
       opacity: 0.8;
       pointer-events: none;
       transition: all 0.3s ease;
@@ -31,48 +31,52 @@
 </head>
 <body>
   <script>
-    // ========================
-    // 🔡 1. WORD LIST SETUP
-    // ========================
+    // ============= 🔡 WORD LIST =============
     const wordList = [
       "hope", "dream", "fire", "sky", "soul", "code", "truth", "mask", "form",
       "line", "dark", "star", "wind", "free", "core", "void", "eye", "mind", "path"
     ];
 
-    // ========================
-    // ⚙️ 2. CONFIGS
-    // ========================
-    const streamSpeed = 50; // ms between drops
-    const wordLifetime = 6000; // ms before word disappears
+    // ============= ⚙️ SETTINGS =============
+    const dropFrequency = 60; // new word every N frames
+    const maxWordsOnScreen = 100;
     const minWordLengthToGlow = 3;
 
-    // ========================
-    // 🎞️ 3. MAIN FUNCTION
-    // ========================
-    function dropWord() {
-      const word = getRandomWord();
-      const span = createWordElement(word);
-      document.body.appendChild(span);
+    // ============= 🗃️ STATE =============
+    let words = [];
+    let frameCount = 0;
 
-      animateWord(span);
+    // ============= 🔁 MAIN LOOP =============
+    function animate() {
+      frameCount++;
 
-      // Remove word after lifetime
-      setTimeout(() => span.remove(), wordLifetime);
+      // Drop new word every N frames
+      if (frameCount % dropFrequency === 0) {
+        if (words.length < maxWordsOnScreen) {
+          const word = createWord();
+          words.push(word);
+          document.body.appendChild(word.el);
+        }
+      }
+
+      // Update word positions
+      words.forEach((word, index) => {
+        word.y += word.speed;
+        word.el.style.top = `${word.y}px`;
+
+        // Remove if offscreen
+        if (word.y > window.innerHeight + 30) {
+          word.el.remove();
+          words.splice(index, 1);
+        }
+      });
+
+      requestAnimationFrame(animate);
     }
 
-    // ========================
-    // 🔁 4. INTERVAL LOOP
-    // ========================
-    setInterval(dropWord, streamSpeed);
-
-    // ========================
-    // 🧠 5. HELPER FUNCTIONS
-    // ========================
-    function getRandomWord() {
-      return wordList[Math.floor(Math.random() * wordList.length)];
-    }
-
-    function createWordElement(text) {
+    // ============= 🧱 CREATE WORD OBJECT =============
+    function createWord() {
+      const text = wordList[Math.floor(Math.random() * wordList.length)];
       const el = document.createElement("span");
       el.classList.add("word");
       el.textContent = text;
@@ -81,30 +85,21 @@
       el.style.left = `${x}px`;
       el.style.top = `-30px`;
 
-      // Check if it should glow
+      // Optional glow effect
       if (text.length >= minWordLengthToGlow) {
         el.classList.add("glow");
-        setTimeout(() => el.classList.remove("glow"), 1000); // brief glow
+        setTimeout(() => el.classList.remove("glow"), 1000);
       }
 
-      return el;
+      return {
+        el,
+        y: -30,
+        speed: 1 + Math.random() * 2
+      };
     }
 
-    function animateWord(el) {
-      let y = 0;
-      const speed = 1 + Math.random() * 2;
-
-      function fall() {
-        y += speed;
-        el.style.top = `${y}px`;
-
-        if (y < window.innerHeight + 30) {
-          requestAnimationFrame(fall);
-        }
-      }
- 
-      fall();
-    }
+    // ============= 🟢 START LOOP =============
+    requestAnimationFrame(animate);
   </script>
 </body>
 </html>
