@@ -50,6 +50,7 @@
 </head>
 <body>
   <div class="grid" id="grid"></div>
+
   <script>
     const gridEl = document.getElementById('grid');
     const cols = 40;
@@ -62,11 +63,9 @@
       // 3-letter
       "AND", "ART", "EYE", "SUN", "FUN", "RUN", "YES", "YOU", "SEE", "END",
       "NOW", "AIR", "KEY", "WAY", "OLD", "NEW", "GOD", "ONE", "TOP", "OWN",
-
       // 4-letter
       "TIME", "LOVE", "SOUL", "MIND", "SIGN", "CALL", "DARK", "FEEL", "HOPE",
       "FREE", "GLOW", "NAME", "TRUE", "OPEN", "STAR", "WISH", "RING", "LIFE",
-
       // 5-letter
       "LIGHT", "TRUTH", "HEART", "SIGIL", "ALIGN", "GRACE", "FORCE", "SIGHT",
       "INNER", "SPARK", "WORLD", "SENSE", "PEACE", "CYCLE", "SHIFT", "DREAM",
@@ -82,15 +81,16 @@
       return sigils[Math.floor(Math.random() * sigils.length)];
     }
 
-    // Build grid
-    for (let col = 0; col < cols; col++) {
-      grid[col] = [];
-      for (let row = 0; row < rows; row++) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.innerText = randomLetter();
-        grid[col][row] = cell;
-        gridEl.appendChild(cell);
+    function buildGrid() {
+      for (let col = 0; col < cols; col++) {
+        grid[col] = [];
+        for (let row = 0; row < rows; row++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.innerText = randomLetter();
+          grid[col][row] = cell;
+          gridEl.appendChild(cell);
+        }
       }
     }
 
@@ -115,7 +115,6 @@
               }
 
               cell.classList.add('trail');
-
               setTimeout(() => {
                 if (isLead && showSigil) {
                   cell.innerText = randomLetter();
@@ -126,11 +125,11 @@
             }
           }
 
-          // 🔍 Word detection (vertical + horizontal)
+          // Word detection
           for (let len = 3; len <= 5; len++) {
             const start = position - len + 1;
 
-            // Vertical check
+            // Vertical
             if (start >= 0 && position < rows) {
               let word = '';
               const cells = [];
@@ -139,6 +138,60 @@
                 cells.push(grid[col][start + i]);
               }
               if (wordList.has(word)) {
-                cells.forEach(cell => cell.classList.add('glow'));
-                setTimeout(() => cells.forEach(cell => cell.classList.remove('glow')), 1200);
+                cells.forEach(c => c.classList.add('glow'));
+                setTimeout(() => cells.forEach(c => c.classList.remove('glow')), 1200);
               }
+            }
+
+            // Horizontal
+            if (position >= 0 && position < rows) {
+              const row = position;
+              const maxStart = cols - len;
+              for (let hStart = 0; hStart <= maxStart; hStart++) {
+                let hWord = '';
+                const hCells = [];
+                for (let i = 0; i < len; i++) {
+                  hWord += grid[hStart + i][row].innerText;
+                  hCells.push(grid[hStart + i][row]);
+                }
+                if (wordList.has(hWord)) {
+                  hCells.forEach(c => c.classList.add('glow'));
+                  setTimeout(() => hCells.forEach(c => c.classList.remove('glow')), 1200);
+                }
+              }
+            }
+          }
+
+          position++;
+        } else {
+          clearInterval(interval);
+        }
+      }, 100);
+    }
+
+    function triggerRandomDrops() {
+      const num = Math.floor(Math.random() * 4) + 2;
+      const availableCols = [...Array(cols).keys()];
+      for (let i = 0; i < num; i++) {
+        const index = Math.floor(Math.random() * availableCols.length);
+        const col = availableCols.splice(index, 1)[0];
+        startDrop(col);
+      }
+    }
+
+    // Wait for DOM and grid to finish building
+    window.addEventListener("load", () => {
+      buildGrid();
+
+      const safe = grid.length === cols && grid[0]?.length === rows;
+      if (!safe) {
+        console.error("❌ Grid incomplete. Drops not started.");
+        return;
+      }
+
+      console.log("✅ Grid ready. Starting drops.");
+      setInterval(triggerRandomDrops, 400);
+    });
+  </script>
+</body>
+</html>
