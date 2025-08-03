@@ -55,10 +55,19 @@
     const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
     const grid = [];
 
+    // Realistic, curated word list (acts like a dictionary)
     const wordList = new Set([
-      "SUN", "SEA", "SKY", "RUN", "FUN", "ART", "AND", "EYE", "YOU",
-      "TIME", "LOVE", "SOUL", "MIND", "GLOW", "STAR", "WISH", "RING",
-      "LIGHT", "TRUTH", "SIGIL", "ALIGN", "SIGHT", "UNITY", "VOICE", "SHIFT"
+      // 3-letter
+      "AND", "ART", "EYE", "SUN", "FUN", "RUN", "YES", "YOU", "SEE", "END",
+      "NOW", "AIR", "KEY", "WAY", "OLD", "NEW", "GOD", "ONE", "TOP", "OWN",
+      // 4-letter
+      "TIME", "LOVE", "SOUL", "MIND", "SIGN", "CALL", "DARK", "FEEL", "HOPE",
+      "FREE", "GLOW", "NAME", "TRUE", "OPEN", "STAR", "WISH", "RING", "LIFE",
+      // 5-letter
+      "LIGHT", "TRUTH", "HEART", "SIGIL", "ALIGN", "GRACE", "FORCE", "SIGHT",
+      "INNER", "SPARK", "WORLD", "SENSE", "PEACE", "CYCLE", "SHIFT", "DREAM",
+      "GATES", "VIBES", "UNITY", "SHELL", "ECHOE", "FLAME", "ALIVE", "BREAT",
+      "VOICE", "NIGHT", "MORPH", "STILL", "CRYPT", "POWER", "DEPTH", "GIVEN"
     ]);
 
     function randomLetter() {
@@ -91,7 +100,6 @@
     }
 
     function glowCells(cells) {
-      const word = cells.map(c => c.innerText).join('');
       cells.forEach(c => c.classList.add('glow'));
       setTimeout(() => {
         cells.forEach(c => c.classList.remove('glow'));
@@ -100,19 +108,27 @@
 
     function checkForWords(col, row) {
       for (let len = 3; len <= 5; len++) {
-        // Vertical
+        // Vertical word detection
         if (row + len <= rows) {
           const vCells = [];
-          for (let i = 0; i < len; i++) vCells.push(grid[col][row + i]);
-          const vWord = vCells.map(c => c.innerText).join('');
+          let vWord = '';
+          for (let i = 0; i < len; i++) {
+            const cell = grid[col][row + i];
+            vCells.push(cell);
+            vWord += cell.innerText;
+          }
           if (wordList.has(vWord)) glowCells(vCells);
         }
 
-        // Horizontal
+        // Horizontal word detection
         if (col + len <= cols) {
           const hCells = [];
-          for (let i = 0; i < len; i++) hCells.push(grid[col + i][row]);
-          const hWord = hCells.map(c => c.innerText).join('');
+          let hWord = '';
+          for (let i = 0; i < len; i++) {
+            const cell = grid[col + i][row];
+            hCells.push(cell);
+            hWord += cell.innerText;
+          }
           if (wordList.has(hWord)) glowCells(hCells);
         }
       }
@@ -169,11 +185,14 @@
 
       setInterval(() => {
         triggerDrops();
-        for (let col = 0; col < cols; col++) {
-          for (let row = 0; row < rows; row++) {
-            checkForWords(col, row);
+        // Scan after slight delay to let cells update
+        setTimeout(() => {
+          for (let col = 0; col < cols; col++) {
+            for (let row = 0; row < rows; row++) {
+              checkForWords(col, row);
+            }
           }
-        }
+        }, 300);
       }, 1000);
     });
   </script>
