@@ -47,13 +47,13 @@
 </head>
 <body>
 
-  <!-- Whisper Audio -->
+  <!-- 🔊 Whisper Audio -->
   <audio id="whispers" loop autoplay>
     <source src="https://cdn.jsdelivr.net/gh/CA12EYX-GPT/assets/whispers.mp3" type="audio/mpeg">
     Your browser does not support the audio element.
   </audio>
 
-  <!-- Loading overlay -->
+  <!-- ⏳ Loading overlay -->
   <div id="loading">Loading words...</div>
 
   <script>
@@ -65,7 +65,7 @@
     const maxWordsOnScreen = 100;
     const minWordLength = 3;
 
-    // 🎯 Load dictionary.txt
+    // ✅ Load dictionary from your GitHub Pages
     fetch('dictionary.txt')
       .then(res => {
         if (!res.ok) throw new Error("Dictionary not found");
@@ -77,15 +77,18 @@
           .map(w => w.trim().toLowerCase())
           .filter((w, i, arr) => w.length >= minWordLength && arr.indexOf(w) === i);
 
-        console.log(`✅ Loaded ${wordList.length} unique words`);
+        console.log(`✅ Loaded ${wordList.length} words`);
         document.getElementById('loading').remove();
         requestAnimationFrame(animate);
       })
       .catch(err => {
-        document.getElementById('loading').textContent = '❌ Failed to load dictionary.';
+        const loadingDiv = document.getElementById('loading');
+        loadingDiv.textContent = '❌ Failed to load dictionary.';
+        loadingDiv.style.color = 'red';
         console.error("Word load error:", err);
       });
 
+    // 🌊 Main animation loop
     function animate() {
       frameCount++;
 
@@ -110,13 +113,16 @@
       requestAnimationFrame(animate);
     }
 
+    // 🧱 Create falling word
     function createWord() {
       const text = wordList[Math.floor(Math.random() * wordList.length)];
       const el = document.createElement("span");
       el.classList.add("word");
       el.textContent = text;
 
-      el.style.left = `${Math.random() * window.innerWidth}px`;
+      // Safe horizontal placement
+      const maxX = Math.max(window.innerWidth - 120, 0);
+      el.style.left = Math.floor(Math.random() * maxX) + "px";
       el.style.top = `-30px`;
 
       if (text.length >= minWordLength) {
@@ -131,7 +137,7 @@
       };
     }
 
-    // 🎧 Mute toggle: Press "M"
+    // 🔇 Press M to mute/unmute whispers
     const audio = document.getElementById("whispers");
     window.addEventListener("keydown", (e) => {
       if (e.key.toLowerCase() === "m") {
