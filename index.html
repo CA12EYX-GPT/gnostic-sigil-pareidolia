@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gnostic Sigil Pareidolia</title>
+  <title>Gnostic Sigil Pareidolia – Matrix Flow</title>
   <style>
     body {
       margin: 0;
@@ -30,11 +30,11 @@
       justify-content: center;
       user-select: none;
       color: #eaeaea;
-      transition: color 1.2s ease;
+      transition: color 1s ease;
     }
 
-    .pulse {
-      color: #666 !important;
+    .trail {
+      color: #888 !important;
     }
 
     .sigil {
@@ -50,7 +50,7 @@
     const cols = 40;
     const rows = 30;
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const sigils = ['◉', '∆', '⟁', '✶'];
+    const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
     const grid = [];
 
     function randomLetter() {
@@ -61,7 +61,7 @@
       return sigils[Math.floor(Math.random() * sigils.length)];
     }
 
-    // Build static grid
+    // Build static white grid
     for (let col = 0; col < cols; col++) {
       grid[col] = [];
       for (let row = 0; row < rows; row++) {
@@ -73,45 +73,58 @@
       }
     }
 
-    // Mist sweep: pulsing band from right to left
-    let currentCol = cols - 1;
+    // Drop animation logic
+    const activeDrops = [];
 
-    function mistStep() {
-      // Randomly choose how many columns wide the mist band is
-      const bandWidth = Math.floor(Math.random() * 3) + 2;
-      const bandStart = currentCol;
+    function startDrop(col) {
+      const dropLength = Math.floor(Math.random() * 6) + 5;
+      let position = 0;
 
-      for (let i = 0; i < bandWidth; i++) {
-        const col = (bandStart - i + cols) % cols;
-        for (let row = 0; row < rows; row++) {
-          const cell = grid[col][row];
+      const interval = setInterval(() => {
+        if (position < rows + dropLength) {
+          for (let i = 0; i < dropLength; i++) {
+            const row = position - i;
+            if (row >= 0 && row < rows) {
+              const cell = grid[col][row];
+              const isLead = i === 0;
+              const showSigil = Math.random() < 0.03;
 
-          // Rarely inject sigils
-          const showSigil = Math.random() < 0.01;
-          if (showSigil) {
-            cell.innerText = randomSigil();
-            cell.classList.add('sigil');
-          }
+              if (isLead && showSigil) {
+                cell.innerText = randomSigil();
+                cell.classList.add('sigil');
+              } else if (isLead) {
+                cell.innerText = randomLetter();
+              }
 
-          // Apply mist pulse
-          cell.classList.add('pulse');
+              cell.classList.add('trail');
 
-          // Revert after fade
-          setTimeout(() => {
-            if (showSigil) {
-              cell.innerText = randomLetter();
-              cell.classList.remove('sigil');
+              setTimeout(() => {
+                if (isLead && showSigil) {
+                  cell.innerText = randomLetter();
+                  cell.classList.remove('sigil');
+                }
+                cell.classList.remove('trail');
+              }, 800);
             }
-            cell.classList.remove('pulse');
-          }, 800);
+          }
+          position++;
+        } else {
+          clearInterval(interval);
         }
-      }
-
-      // Shift band left
-      currentCol = (currentCol - 1 + cols) % cols;
+      }, 100);
     }
 
-    setInterval(mistStep, 180);
+    function triggerRandomDrops() {
+      const num = Math.floor(Math.random() * 4) + 2; // 2 to 5 columns at once
+      const availableCols = [...Array(cols).keys()];
+      for (let i = 0; i < num; i++) {
+        const index = Math.floor(Math.random() * availableCols.length);
+        const col = availableCols.splice(index, 1)[0];
+        startDrop(col);
+      }
+    }
+
+    setInterval(triggerRandomDrops, 400);
   </script>
 </body>
 </html>
