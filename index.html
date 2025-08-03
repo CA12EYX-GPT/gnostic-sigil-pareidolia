@@ -2,156 +2,109 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gnostic Sigil Pareidolia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Waterfall – Gnostic Sigil Pareidolia</title>
   <style>
     body {
       margin: 0;
-      background: #0b0b0f;
+      background: #000;
+      color: #0ff;
+      font-family: monospace;
       overflow: hidden;
-      font-family: 'Courier New', Courier, monospace;
     }
 
-    .grid {
+    .word {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      display: grid;
-      grid-template-columns: repeat(40, 1fr);
-      grid-template-rows: repeat(30, 1fr);
-      font-size: 0.85rem;
-    }
-
-    .cell {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
-      color: #eaeaea;
-      transition: color 0.8s ease;
-    }
-
-    .trail {
-      color: #888 !important;
-    }
-
-    .sigil {
-      color: #e91e63 !important;
-      text-shadow: 0 0 6px #e91e63;
+      white-space: nowrap;
+      font-size: 1.5rem;
+      opacity: 0.8;
+      pointer-events: none;
+      transition: all 0.3s ease;
     }
 
     .glow {
-      color: #00f0ff !important;
-      text-shadow: 0 0 8px #00f0ff;
+      color: teal;
+      text-shadow: 0 0 8px teal;
+      font-weight: bold;
     }
   </style>
-
-  <!-- 🔗 External word list script -->
-  <script src="wordlist.js"></script>
 </head>
 <body>
-  <div class="grid" id="grid"></div>
-
   <script>
-    const gridEl = document.getElementById('grid');
-    const cols = 40;
-    const rows = 30;
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
-    const grid = [];
+    // ========================
+    // 🔡 1. WORD LIST SETUP
+    // ========================
+    const wordList = [
+      "hope", "dream", "fire", "sky", "soul", "code", "truth", "mask", "form",
+      "line", "dark", "star", "wind", "free", "core", "void", "eye", "mind", "path"
+    ];
 
-    function randomLetter() {
-      return letters.charAt(Math.floor(Math.random() * letters.length));
+    // ========================
+    // ⚙️ 2. CONFIGS
+    // ========================
+    const streamSpeed = 50; // ms between drops
+    const wordLifetime = 6000; // ms before word disappears
+    const minWordLengthToGlow = 3;
+
+    // ========================
+    // 🎞️ 3. MAIN FUNCTION
+    // ========================
+    function dropWord() {
+      const word = getRandomWord();
+      const span = createWordElement(word);
+      document.body.appendChild(span);
+
+      animateWord(span);
+
+      // Remove word after lifetime
+      setTimeout(() => span.remove(), wordLifetime);
     }
 
-    function randomSigil() {
-      return sigils[Math.floor(Math.random() * sigils.length)];
+    // ========================
+    // 🔁 4. INTERVAL LOOP
+    // ========================
+    setInterval(dropWord, streamSpeed);
+
+    // ========================
+    // 🧠 5. HELPER FUNCTIONS
+    // ========================
+    function getRandomWord() {
+      return wordList[Math.floor(Math.random() * wordList.length)];
     }
 
-    // Build grid
-    for (let col = 0; col < cols; col++) {
-      grid[col] = [];
-      for (let row = 0; row < rows; row++) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.innerText = randomLetter();
-        grid[col][row] = cell;
-        gridEl.appendChild(cell);
+    function createWordElement(text) {
+      const el = document.createElement("span");
+      el.classList.add("word");
+      el.textContent = text;
+
+      const x = Math.random() * window.innerWidth;
+      el.style.left = `${x}px`;
+      el.style.top = `-30px`;
+
+      // Check if it should glow
+      if (text.length >= minWordLengthToGlow) {
+        el.classList.add("glow");
+        setTimeout(() => el.classList.remove("glow"), 1000); // brief glow
       }
+
+      return el;
     }
 
-    function startDrop(col) {
-      const dropLength = Math.floor(Math.random() * 6) + 5;
-      let position = 0;
+    function animateWord(el) {
+      let y = 0;
+      const speed = 1 + Math.random() * 2;
 
-      const interval = setInterval(() => {
-        if (position < rows + dropLength) {
-          for (let i = 0; i < dropLength; i++) {
-            const row = position - i;
-            if (row >= 0 && row < rows) {
-              const cell = grid[col][row];
-              const isLead = i === 0;
-              const showSigil = Math.random() < 0.03;
+      function fall() {
+        y += speed;
+        el.style.top = `${y}px`;
 
-              if (isLead && showSigil) {
-                cell.innerText = randomSigil();
-                cell.classList.add('sigil');
-              } else if (isLead) {
-                cell.innerText = randomLetter();
-              }
-
-              cell.classList.add('trail');
-
-              setTimeout(() => {
-                if (isLead && showSigil) {
-                  cell.innerText = randomLetter();
-                  cell.classList.remove('sigil');
-                }
-                cell.classList.remove('trail');
-              }, 800);
-            }
-          }
-
-          // Check for 3-letter vertical words
-          if (position >= 2 && position < rows) {
-            const word =
-              grid[col][position - 2].innerText +
-              grid[col][position - 1].innerText +
-              grid[col][position].innerText;
-
-            if (window.wordList && window.wordList.has(word)) {
-              const cells = [
-                grid[col][position - 2],
-                grid[col][position - 1],
-                grid[col][position],
-              ];
-              cells.forEach(cell => cell.classList.add('glow'));
-              setTimeout(() => {
-                cells.forEach(cell => cell.classList.remove('glow'));
-              }, 1200);
-            }
-          }
-
-          position++;
-        } else {
-          clearInterval(interval);
+        if (y < window.innerHeight + 30) {
+          requestAnimationFrame(fall);
         }
-      }, 100);
-    }
-
-    function triggerRandomDrops() {
-      const num = Math.floor(Math.random() * 4) + 2;
-      const availableCols = [...Array(cols).keys()];
-      for (let i = 0; i < num; i++) {
-        const index = Math.floor(Math.random() * availableCols.length);
-        const col = availableCols.splice(index, 1)[0];
-        startDrop(col);
       }
-    }
 
-    setInterval(triggerRandomDrops, 400);
+      fall();
+    }
   </script>
 </body>
 </html>
