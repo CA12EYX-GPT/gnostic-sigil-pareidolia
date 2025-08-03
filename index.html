@@ -58,10 +58,22 @@
     const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
     const grid = [];
 
-    const wordList = new Set([
-      "AND", "ART", "SEE", "SUN", "FUN", "RUN", "YES", "EYE", "YOU", "NOW",
-      "END", "GOD", "TOP", "ONE", "NEW", "OLD", "AIR", "WAY", "DAY", "KEY"
-    ]);
+  const wordList = new Set([
+  // 3-letter
+  "AND", "ART", "EYE", "SUN", "FUN", "RUN", "YES", "YOU", "SEE", "END",
+  "NOW", "AIR", "KEY", "WAY", "OLD", "NEW", "GOD", "ONE", "TOP", "OWN",
+
+  // 4-letter
+  "TIME", "LOVE", "SOUL", "MIND", "SIGN", "CALL", "DARK", "FEEL", "HOPE",
+  "FREE", "GLOW", "NAME", "TRUE", "OPEN", "STAR", "WISH", "RING", "LIFE",
+
+  // 5-letter
+  "LIGHT", "TRUTH", "HEART", "SIGIL", "ALIGN", "GRACE", "FORCE", "SIGHT",
+  "INNER", "SPARK", "WORLD", "SENSE", "PEACE", "CYCLE", "SHIFT", "DREAM",
+  "GATES", "VIBES", "UNITY", "SHELL", "ECHOE", "FLAME", "ALIVE", "BREAT",
+  "VOICE", "NIGHT", "MORPH", "STILL", "CRYPT", "POWER", "DEPTH", "GIVEN"
+]);
+
 
     function randomLetter() {
       return letters.charAt(Math.floor(Math.random() * letters.length));
