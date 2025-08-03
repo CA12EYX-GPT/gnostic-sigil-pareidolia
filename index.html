@@ -54,16 +54,13 @@
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
     const grid = [];
+    const isDropping = Array.from({ length: cols }, () => Array(rows).fill(false));
 
-    // Realistic, curated word list (acts like a dictionary)
     const wordList = new Set([
-      // 3-letter
       "AND", "ART", "EYE", "SUN", "FUN", "RUN", "YES", "YOU", "SEE", "END",
       "NOW", "AIR", "KEY", "WAY", "OLD", "NEW", "GOD", "ONE", "TOP", "OWN",
-      // 4-letter
       "TIME", "LOVE", "SOUL", "MIND", "SIGN", "CALL", "DARK", "FEEL", "HOPE",
       "FREE", "GLOW", "NAME", "TRUE", "OPEN", "STAR", "WISH", "RING", "LIFE",
-      // 5-letter
       "LIGHT", "TRUTH", "HEART", "SIGIL", "ALIGN", "GRACE", "FORCE", "SIGHT",
       "INNER", "SPARK", "WORLD", "SENSE", "PEACE", "CYCLE", "SHIFT", "DREAM",
       "GATES", "VIBES", "UNITY", "SHELL", "ECHOE", "FLAME", "ALIVE", "BREAT",
@@ -90,13 +87,10 @@
         }
       }
 
-      // Optional stooge word: SUN
+      // Stooge SUN
       grid[1][1].innerText = "S";
       grid[2][1].innerText = "U";
       grid[3][1].innerText = "N";
-
-      grid[1][2].innerText = "U";
-      grid[1][3].innerText = "N";
     }
 
     function glowCells(cells) {
@@ -106,9 +100,17 @@
       }, 1500);
     }
 
+    function safeCells(cells) {
+      return cells.every(cell => {
+        const col = parseInt(cell.dataset.col);
+        const row = parseInt(cell.dataset.row);
+        return !isDropping[col][row];
+      });
+    }
+
     function checkForWords(col, row) {
       for (let len = 3; len <= 5; len++) {
-        // Vertical word detection
+        // Vertical
         if (row + len <= rows) {
           const vCells = [];
           let vWord = '';
@@ -117,10 +119,10 @@
             vCells.push(cell);
             vWord += cell.innerText;
           }
-          if (wordList.has(vWord)) glowCells(vCells);
+          if (wordList.has(vWord) && safeCells(vCells)) glowCells(vCells);
         }
 
-        // Horizontal word detection
+        // Horizontal
         if (col + len <= cols) {
           const hCells = [];
           let hWord = '';
@@ -129,7 +131,7 @@
             hCells.push(cell);
             hWord += cell.innerText;
           }
-          if (wordList.has(hWord)) glowCells(hCells);
+          if (wordList.has(hWord) && safeCells(hCells)) glowCells(hCells);
         }
       }
     }
@@ -147,6 +149,8 @@
               const isLead = i === 0;
               const showSigil = Math.random() < 0.02;
 
+              isDropping[col][row] = true;
+
               if (isLead && showSigil) {
                 cell.innerText = randomSigil();
                 cell.classList.add('sigil');
@@ -155,12 +159,14 @@
               }
 
               cell.classList.add('trail');
+
               setTimeout(() => {
                 if (isLead && showSigil) {
                   cell.innerText = randomLetter();
                   cell.classList.remove('sigil');
                 }
                 cell.classList.remove('trail');
+                isDropping[col][row] = false;
               }, 800);
             }
           }
@@ -183,16 +189,24 @@
     window.addEventListener("load", () => {
       buildGrid();
 
+      // Tag each cell with its coordinates for quick reference
+      for (let col = 0; col < cols; col++) {
+        for (let row = 0; row < rows; row++) {
+          const cell = grid[col][row];
+          cell.dataset.col = col;
+          cell.dataset.row = row;
+        }
+      }
+
       setInterval(() => {
         triggerDrops();
-        // Scan after slight delay to let cells update
         setTimeout(() => {
           for (let col = 0; col < cols; col++) {
             for (let row = 0; row < rows; row++) {
               checkForWords(col, row);
             }
           }
-        }, 300);
+        }, 400);
       }, 1000);
     });
   </script>
