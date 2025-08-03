@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gnostic Sigil Pareidolia – Matrix Flow</title>
+  <title>Gnostic Sigil Pareidolia – Word Detection</title>
   <style>
     body {
       margin: 0;
@@ -30,7 +30,7 @@
       justify-content: center;
       user-select: none;
       color: #eaeaea;
-      transition: color 1s ease;
+      transition: color 0.8s ease;
     }
 
     .trail {
@@ -40,6 +40,11 @@
     .sigil {
       color: #e91e63 !important;
       text-shadow: 0 0 6px #e91e63;
+    }
+
+    .glow {
+      color: #00f0ff !important;
+      text-shadow: 0 0 8px #00f0ff;
     }
   </style>
 </head>
@@ -53,6 +58,11 @@
     const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
     const grid = [];
 
+    const wordList = new Set([
+      "AND", "ART", "SEE", "SUN", "FUN", "RUN", "YES", "EYE", "YOU", "NOW",
+      "END", "GOD", "TOP", "ONE", "NEW", "OLD", "AIR", "WAY", "DAY", "KEY"
+    ]);
+
     function randomLetter() {
       return letters.charAt(Math.floor(Math.random() * letters.length));
     }
@@ -61,7 +71,7 @@
       return sigils[Math.floor(Math.random() * sigils.length)];
     }
 
-    // Build static white grid
+    // Build grid
     for (let col = 0; col < cols; col++) {
       grid[col] = [];
       for (let row = 0; row < rows; row++) {
@@ -72,9 +82,6 @@
         gridEl.appendChild(cell);
       }
     }
-
-    // Drop animation logic
-    const activeDrops = [];
 
     function startDrop(col) {
       const dropLength = Math.floor(Math.random() * 6) + 5;
@@ -107,6 +114,27 @@
               }, 800);
             }
           }
+
+          // Check for vertical words
+          if (position >= 2 && position < rows) {
+            const word = 
+              grid[col][position - 2].innerText +
+              grid[col][position - 1].innerText +
+              grid[col][position].innerText;
+
+            if (wordList.has(word)) {
+              const cells = [
+                grid[col][position - 2],
+                grid[col][position - 1],
+                grid[col][position],
+              ];
+              cells.forEach(cell => cell.classList.add('glow'));
+              setTimeout(() => {
+                cells.forEach(cell => cell.classList.remove('glow'));
+              }, 1200);
+            }
+          }
+
           position++;
         } else {
           clearInterval(interval);
@@ -115,7 +143,7 @@
     }
 
     function triggerRandomDrops() {
-      const num = Math.floor(Math.random() * 4) + 2; // 2 to 5 columns at once
+      const num = Math.floor(Math.random() * 4) + 2;
       const availableCols = [...Array(cols).keys()];
       for (let i = 0; i < num; i++) {
         const index = Math.floor(Math.random() * availableCols.length);
