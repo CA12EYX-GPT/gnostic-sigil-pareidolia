@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gnostic Sigil Pareidolia – Easy Test</title>
+  <title>Gnostic Sigil Pareidolia – Word Glow Patch</title>
   <style>
     body {
       margin: 0;
@@ -21,7 +21,7 @@
       display: grid;
       grid-template-columns: repeat(40, 1fr);
       grid-template-rows: repeat(30, 1fr);
-      font-size: 1.5rem; /* 🔍 Increased for visibility */
+      font-size: 1.5rem; /* Big and visible */
     }
 
     .cell {
@@ -62,23 +62,23 @@
         }
       }
 
-      // 🔒 Vertical "SUN" at col 2, rows 2–4
-      grid[2][2].innerText = "S";
-      grid[2][3].innerText = "U";
-      grid[2][4].innerText = "N";
+      // 🔒 Vertical "SUN" at column 2, rows 1–3
+      grid[2][1].innerText = "S";
+      grid[2][2].innerText = "U";
+      grid[2][3].innerText = "N";
+      grid[2][1].dataset.locked = "true";
       grid[2][2].dataset.locked = "true";
       grid[2][3].dataset.locked = "true";
-      grid[2][4].dataset.locked = "true";
-      checkForWords(2, 4);
+      checkForWords(2, 3);
 
-      // 🔒 Horizontal "SUN" at row 6, cols 2–4
-      grid[2][6].innerText = "S";
-      grid[3][6].innerText = "U";
-      grid[4][6].innerText = "N";
-      grid[2][6].dataset.locked = "true";
-      grid[3][6].dataset.locked = "true";
-      grid[4][6].dataset.locked = "true";
-      checkForWords(2, 6); // ✅ call from first letter of word
+      // 🔒 Horizontal "SUN" at row 1, columns 5–7
+      grid[5][1].innerText = "S";
+      grid[6][1].innerText = "U";
+      grid[7][1].innerText = "N";
+      grid[5][1].dataset.locked = "true";
+      grid[6][1].dataset.locked = "true";
+      grid[7][1].dataset.locked = "true";
+      checkForWords(5, 1); // ✅ START of word
     }
 
     function glowCells(cells) {
