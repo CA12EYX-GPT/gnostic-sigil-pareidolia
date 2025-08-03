@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gnostic Sigil Pareidolia – Word Detection</title>
+  <title>Gnostic Sigil Pareidolia</title>
   <style>
     body {
       margin: 0;
@@ -47,9 +47,13 @@
       text-shadow: 0 0 8px #00f0ff;
     }
   </style>
+
+  <!-- 🔗 External word list script -->
+  <script src="wordlist.js"></script>
 </head>
 <body>
   <div class="grid" id="grid"></div>
+
   <script>
     const gridEl = document.getElementById('grid');
     const cols = 40;
@@ -57,23 +61,6 @@
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
     const grid = [];
-
-  const wordList = new Set([
-  // 3-letter
-  "AND", "ART", "EYE", "SUN", "FUN", "RUN", "YES", "YOU", "SEE", "END",
-  "NOW", "AIR", "KEY", "WAY", "OLD", "NEW", "GOD", "ONE", "TOP", "OWN",
-
-  // 4-letter
-  "TIME", "LOVE", "SOUL", "MIND", "SIGN", "CALL", "DARK", "FEEL", "HOPE",
-  "FREE", "GLOW", "NAME", "TRUE", "OPEN", "STAR", "WISH", "RING", "LIFE",
-
-  // 5-letter
-  "LIGHT", "TRUTH", "HEART", "SIGIL", "ALIGN", "GRACE", "FORCE", "SIGHT",
-  "INNER", "SPARK", "WORLD", "SENSE", "PEACE", "CYCLE", "SHIFT", "DREAM",
-  "GATES", "VIBES", "UNITY", "SHELL", "ECHOE", "FLAME", "ALIVE", "BREAT",
-  "VOICE", "NIGHT", "MORPH", "STILL", "CRYPT", "POWER", "DEPTH", "GIVEN"
-]);
-
 
     function randomLetter() {
       return letters.charAt(Math.floor(Math.random() * letters.length));
@@ -127,14 +114,14 @@
             }
           }
 
-          // Check for vertical words
+          // Check for 3-letter vertical words
           if (position >= 2 && position < rows) {
-            const word = 
+            const word =
               grid[col][position - 2].innerText +
               grid[col][position - 1].innerText +
               grid[col][position].innerText;
 
-            if (wordList.has(word)) {
+            if (window.wordList && window.wordList.has(word)) {
               const cells = [
                 grid[col][position - 2],
                 grid[col][position - 1],
