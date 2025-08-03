@@ -60,13 +60,10 @@
     const grid = [];
 
     const wordList = new Set([
-      // 3-letter
       "AND", "ART", "EYE", "SUN", "FUN", "RUN", "YES", "YOU", "SEE", "END",
       "NOW", "AIR", "KEY", "WAY", "OLD", "NEW", "GOD", "ONE", "TOP", "OWN",
-      // 4-letter
       "TIME", "LOVE", "SOUL", "MIND", "SIGN", "CALL", "DARK", "FEEL", "HOPE",
       "FREE", "GLOW", "NAME", "TRUE", "OPEN", "STAR", "WISH", "RING", "LIFE",
-      // 5-letter
       "LIGHT", "TRUTH", "HEART", "SIGIL", "ALIGN", "GRACE", "FORCE", "SIGHT",
       "INNER", "SPARK", "WORLD", "SENSE", "PEACE", "CYCLE", "SHIFT", "DREAM",
       "GATES", "VIBES", "UNITY", "SHELL", "ECHOE", "FLAME", "ALIVE", "BREAT",
@@ -90,6 +87,39 @@
           cell.innerText = randomLetter();
           grid[col][row] = cell;
           gridEl.appendChild(cell);
+        }
+      }
+    }
+
+    function glowCells(cells) {
+      cells.forEach(c => c.classList.add('glow'));
+      setTimeout(() => {
+        cells.forEach(c => c.classList.remove('glow'));
+      }, 1200);
+    }
+
+    function checkForWords(col, row) {
+      for (let len = 3; len <= 5; len++) {
+        // Vertical
+        let vStart = row - len + 1;
+        if (vStart >= 0 && vStart + len <= rows) {
+          const vLetters = [];
+          for (let i = 0; i < len; i++) {
+            vLetters.push(grid[col][vStart + i]);
+          }
+          const vWord = vLetters.map(c => c.innerText).join('');
+          if (wordList.has(vWord)) glowCells(vLetters);
+        }
+
+        // Horizontal
+        let hStart = col - len + 1;
+        if (hStart >= 0 && hStart + len <= cols) {
+          const hLetters = [];
+          for (let i = 0; i < len; i++) {
+            hLetters.push(grid[hStart + i][row]);
+          }
+          const hWord = hLetters.map(c => c.innerText).join('');
+          if (wordList.has(hWord)) glowCells(hLetters);
         }
       }
     }
@@ -125,41 +155,8 @@
             }
           }
 
-          // Word detection
-          for (let len = 3; len <= 5; len++) {
-            const start = position - len + 1;
-
-            // Vertical
-            if (start >= 0 && position < rows) {
-              let word = '';
-              const cells = [];
-              for (let i = 0; i < len; i++) {
-                word += grid[col][start + i].innerText;
-                cells.push(grid[col][start + i]);
-              }
-              if (wordList.has(word)) {
-                cells.forEach(c => c.classList.add('glow'));
-                setTimeout(() => cells.forEach(c => c.classList.remove('glow')), 1200);
-              }
-            }
-
-            // Horizontal
-            if (position >= 0 && position < rows) {
-              const row = position;
-              const maxStart = cols - len;
-              for (let hStart = 0; hStart <= maxStart; hStart++) {
-                let hWord = '';
-                const hCells = [];
-                for (let i = 0; i < len; i++) {
-                  hWord += grid[hStart + i][row].innerText;
-                  hCells.push(grid[hStart + i][row]);
-                }
-                if (wordList.has(hWord)) {
-                  hCells.forEach(c => c.classList.add('glow'));
-                  setTimeout(() => hCells.forEach(c => c.classList.remove('glow')), 1200);
-                }
-              }
-            }
+          if (position >= 0 && position < rows) {
+            checkForWords(col, position);
           }
 
           position++;
@@ -179,17 +176,14 @@
       }
     }
 
-    // Wait for DOM and grid to finish building
     window.addEventListener("load", () => {
       buildGrid();
 
-      const safe = grid.length === cols && grid[0]?.length === rows;
-      if (!safe) {
-        console.error("❌ Grid incomplete. Drops not started.");
+      if (!grid.length || !grid[0] || grid[0].length !== rows) {
+        console.error("❌ Grid dimensions invalid");
         return;
       }
 
-      console.log("✅ Grid ready. Starting drops.");
       setInterval(triggerRandomDrops, 400);
     });
   </script>
