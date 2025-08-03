@@ -59,9 +59,7 @@
     const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
     const grid = [];
 
-    const wordList = new Set([
-      "SUN", "GOD", "TIME", "SEE", "LOVE", "MIND", "SOUL", "SIGN"
-    ]);
+    const wordList = new Set(["SUN", "GOD", "TIME", "SEE", "LOVE", "MIND", "SOUL", "SIGN"]);
 
     function randomLetter() {
       return letters.charAt(Math.floor(Math.random() * letters.length));
@@ -83,11 +81,17 @@
         }
       }
 
-      // Force in "SUN" vertically at col 5, rows 10-12
+      // Force vertical "SUN" at col 5, rows 10–12
       grid[5][10].innerText = "S";
       grid[5][11].innerText = "U";
       grid[5][12].innerText = "N";
       checkForWords(5, 12);
+
+      // Force horizontal "SUN" at row 15, cols 6–8
+      grid[6][15].innerText = "S";
+      grid[7][15].innerText = "U";
+      grid[8][15].innerText = "N";
+      checkForWords(8, 15);
     }
 
     function glowCells(cells) {
@@ -114,6 +118,7 @@
             vLetters.push(grid[col][vStart + i]);
           }
           const vWord = vLetters.map(c => c.innerText).join('');
+          console.log("V-check:", vWord);
           if (wordList.has(vWord)) glowCells(vLetters);
         }
 
@@ -125,6 +130,7 @@
             hLetters.push(grid[hStart + i][row]);
           }
           const hWord = hLetters.map(c => c.innerText).join('');
+          console.log("H-check:", hWord);
           if (wordList.has(hWord)) glowCells(hLetters);
         }
       }
@@ -186,12 +192,6 @@
 
     window.addEventListener("load", () => {
       buildGrid();
-
-      if (!grid.length || !grid[0] || grid[0].length !== rows) {
-        console.error("❌ Grid dimensions invalid");
-        return;
-      }
-
       setInterval(triggerRandomDrops, 400);
     });
   </script>
