@@ -54,7 +54,8 @@
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
     const grid = [];
-    const isDropping = Array.from({ length: cols }, () => Array(rows).fill(false));
+
+    const isColumnDropping = new Array(cols).fill(false); // per column flag
 
     const wordList = new Set([
       "AND", "ART", "EYE", "SUN", "FUN", "RUN", "YES", "YOU", "SEE", "END",
@@ -87,7 +88,7 @@
         }
       }
 
-      // Stooge SUN
+      // Stooge: SUN
       grid[1][1].innerText = "S";
       grid[2][1].innerText = "U";
       grid[3][1].innerText = "N";
@@ -100,29 +101,10 @@
       }, 1500);
     }
 
-    function safeCells(cells) {
-      return cells.every(cell => {
-        const col = parseInt(cell.dataset.col);
-        const row = parseInt(cell.dataset.row);
-        return !isDropping[col][row];
-      });
-    }
-
     function checkForWords(col, row) {
       for (let len = 3; len <= 5; len++) {
-        // Vertical
-        if (row + len <= rows) {
-          const vCells = [];
-          let vWord = '';
-          for (let i = 0; i < len; i++) {
-            const cell = grid[col][row + i];
-            vCells.push(cell);
-            vWord += cell.innerText;
-          }
-          if (wordList.has(vWord) && safeCells(vCells)) glowCells(vCells);
-        }
 
-        // Horizontal
+        // --- Horizontal only ---
         if (col + len <= cols) {
           const hCells = [];
           let hWord = '';
@@ -131,14 +113,29 @@
             hCells.push(cell);
             hWord += cell.innerText;
           }
-          if (wordList.has(hWord) && safeCells(hCells)) glowCells(hCells);
+          if (wordList.has(hWord)) glowCells(hCells);
         }
+
+        // --- Vertical temporarily disabled to prevent false positives ---
+        /*
+        if (!isColumnDropping[col] && row + len <= rows) {
+          const vCells = [];
+          let vWord = '';
+          for (let i = 0; i < len; i++) {
+            const cell = grid[col][row + i];
+            vCells.push(cell);
+            vWord += cell.innerText;
+          }
+          if (wordList.has(vWord)) glowCells(vCells);
+        }
+        */
       }
     }
 
     function dropTrail(col) {
       const dropLength = Math.floor(Math.random() * 5) + 5;
       let position = 0;
+      isColumnDropping[col] = true;
 
       const interval = setInterval(() => {
         if (position < rows + dropLength) {
@@ -148,8 +145,6 @@
               const cell = grid[col][row];
               const isLead = i === 0;
               const showSigil = Math.random() < 0.02;
-
-              isDropping[col][row] = true;
 
               if (isLead && showSigil) {
                 cell.innerText = randomSigil();
@@ -166,13 +161,13 @@
                   cell.classList.remove('sigil');
                 }
                 cell.classList.remove('trail');
-                isDropping[col][row] = false;
               }, 800);
             }
           }
           position++;
         } else {
           clearInterval(interval);
+          isColumnDropping[col] = false;
         }
       }, 90);
     }
@@ -188,15 +183,6 @@
 
     window.addEventListener("load", () => {
       buildGrid();
-
-      // Tag each cell with its coordinates for quick reference
-      for (let col = 0; col < cols; col++) {
-        for (let row = 0; row < rows; row++) {
-          const cell = grid[col][row];
-          cell.dataset.col = col;
-          cell.dataset.row = row;
-        }
-      }
 
       setInterval(() => {
         triggerDrops();
