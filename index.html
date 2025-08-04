@@ -47,13 +47,13 @@
       text-shadow: 0 0 6px #00f0ff;
       font-weight: bold;
       opacity: 1;
-    .glow-fade {
-    color: #ccc !important;
-    opacity: 0.75 !important;
-    text-shadow: none !important;
-    transition: color 1s ease, opacity 1s ease;
-}
+    }
 
+    .glow-fade {
+      color: #ccc !important;
+      opacity: 0.75 !important;
+      text-shadow: none !important;
+      transition: color 1s ease, opacity 1s ease;
     }
   </style>
 </head>
@@ -71,20 +71,19 @@
       "CODE", "FIRE", "ART", "ECHO", "LIGHT", "TRUTH", "ALIVE", "HEART", "SEE", "NOW", "OPEN"
     ]);
 
-    const grid = [];
     const gridEl = document.getElementById('grid');
+    const grid = Array.from({ length: cols }, () => Array(rows).fill(null));
 
     // Create grid
-    for (let r = 0; r < rows; r++) {
-      const row = [];
-      for (let c = 0; c < cols; c++) {
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.innerText = randomLetter();
+        cell.style.opacity = (0.6 + Math.random() * 0.3).toFixed(2);
+        grid[col][row] = cell;
         gridEl.appendChild(cell);
-        row.push(cell);
       }
-      grid.push(row);
     }
 
     function randomLetter() {
@@ -95,16 +94,40 @@
       return sigils[Math.floor(Math.random() * sigils.length)];
     }
 
-    // Animate one row at a time
-    function animateRow(rowIdx) {
+    function scanRow(r) {
+      const rowText = grid.map(col => col[r].innerText).join('');
+      for (let start = 0; start <= cols - 3; start++) {
+        for (let len = 3; len <= 6; len++) {
+          const word = rowText.slice(start, start + len);
+          if (wordList.has(word)) {
+            const cells = [];
+            for (let i = 0; i < len; i++) {
+              const cell = grid[start + i][r];
+              cell.classList.remove('glow-fade');
+              cell.classList.add('glow');
+              cells.push(cell);
+            }
+
+            setTimeout(() => {
+              cells.forEach(cell => {
+                cell.classList.remove('glow');
+                cell.classList.add('glow-fade');
+              });
+            }, 1200);
+          }
+        }
+      }
+    }
+
+    function animateRow(rowIdx, onComplete = () => {}) {
       let col = 0;
 
       function step() {
         if (col < cols) {
-          const cell = grid[rowIdx][col];
+          const cell = grid[col][rowIdx];
           const isSigil = Math.random() < 0.02;
           cell.innerText = isSigil ? randomSigil() : randomLetter();
-          cell.classList.remove('glow');
+          cell.classList.remove('glow', 'glow-fade');
           cell.classList.add(isSigil ? 'sigil' : 'trail');
 
           setTimeout(() => {
@@ -114,52 +137,49 @@
           col++;
           requestAnimationFrame(step);
         } else {
-          // After row completes, check for real words
           scanRow(rowIdx);
+          onComplete();
         }
       }
 
       step();
     }
 
-    // Check for real horizontal words in a given row
-function scanRow(r) {
-  const rowText = grid[r].map(cell => cell.innerText).join('');
-  for (let start = 0; start <= cols - 3; start++) {
-    for (let len = 3; len <= 6; len++) {
-      const word = rowText.slice(start, start + len);
-      if (wordList.has(word)) {
-        const cells = grid[r].slice(start, start + len);
-        cells.forEach(cell => {
-          cell.classList.remove('glow-fade');
-          cell.classList.add('glow');
-        });
+    // Track which rows are active to avoid overlap
+    const activeRows = new Set();
 
-        setTimeout(() => {
-          cells.forEach(cell => {
-            cell.classList.remove('glow');
-            cell.classList.add('glow-fade');
-          });
-        }, 1200);
+    let quiet = false;
+    let intervalDelay = 120;
+
+    function triggerRandomRows() {
+      const row = Math.floor(Math.random() * rows);
+
+      if (!activeRows.has(row)) {
+        activeRows.add(row);
+        animateRow(row, () => activeRows.delete(row));
       }
     }
-  }
-}
 
+    // Interval driver
+    setInterval(() => {
+      triggerRandomRows();
+    }, () => quiet ? 400 : intervalDelay); // actual interval is fixed below
 
-// Track which rows are already animating
-const activeRows = new Set();
+    // Loop driver with dynamic interval
+    let mainInterval = setInterval(triggerRandomRows, intervalDelay);
 
-// Trigger random rows at random intervals
-setInterval(() => {
-  const row = Math.floor(Math.random() * rows);
+    // Quiet moment cycle every ~12–20s
+    setInterval(() => {
+      quiet = true;
+      clearInterval(mainInterval);
+      mainInterval = setInterval(triggerRandomRows, 400); // slow down
 
-  if (!activeRows.has(row)) {
-    activeRows.add(row);
-    animateRow(row, () => activeRows.delete(row));
-  }
-}, 120); // <-- SPEED BOOST: more frequent row starts
-
+      setTimeout(() => {
+        quiet = false;
+        clearInterval(mainInterval);
+        mainInterval = setInterval(triggerRandomRows, intervalDelay); // restore
+      }, 3000 + Math.random() * 2000); // quiet lasts 3–5 seconds
+    }, 12000 + Math.random() * 8000); // happens every 12–20s
   </script>
 </body>
 </html>
