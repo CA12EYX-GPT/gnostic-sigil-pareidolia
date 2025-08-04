@@ -65,6 +65,16 @@
       .trail-3  { color: #aaa !important; }
       .trail-2  { color: #ccc !important; }
       .trail-1  { color: #eee !important; }
+      
+    @keyframes shimmer {
+        0%   { opacity: 0.85; }
+        50%  { opacity: 1; }
+        100% { opacity: 0.85; }
+      }
+      
+      .cell {
+        animation: shimmer 4s ease-in-out infinite;
+      }
   </style>
 </head>
 <body>
