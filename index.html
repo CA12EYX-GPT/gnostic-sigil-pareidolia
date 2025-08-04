@@ -2,30 +2,37 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Waterfall Glow</title>
+  <title>Gnostic Sigil Pareidolia</title>
   <style>
     body {
       margin: 0;
       background: black;
-      color: white;
-      font-family: monospace;
+      color: #444;
+      font-family: 'Courier New', monospace;
       overflow: hidden;
+      letter-spacing: 0.05em;
     }
+
     .grid {
       display: grid;
-      grid-template-columns: repeat(40, 1fr);
-      grid-auto-rows: 1.2em;
+      grid-template-columns: repeat(80, 1fr); /* wide matrix */
+      grid-auto-rows: 1.05em;
       width: 100vw;
       height: 100vh;
     }
+
     .cell {
       text-align: center;
-      font-size: 1em;
-      transition: color 0.2s;
+      font-size: 0.9em;
+      line-height: 1.1em;
+      opacity: 0.8;
+      transition: color 0.3s ease, opacity 0.3s ease;
     }
+
     .glow {
       color: teal;
       font-weight: bold;
+      opacity: 1;
     }
   </style>
 </head>
@@ -33,14 +40,14 @@
   <div id="grid" class="grid"></div>
 
   <script>
-    const rows = 30;
-    const cols = 40;
+    const rows = 45;
+    const cols = 80;
     const minWordLength = 3;
     const wordList = [
       "SUN", "MOON", "STAR", "DREAM", "LOVE", "HOPE", "WISH", "DROP",
       "CODE", "FIRE", "WARM", "COOL", "WIND", "SOUL", "FEEL", "EYES",
       "RISE", "FLOW", "VOID", "REAL", "MIND", "GLOW", "PEACE", "TIME"
-    ]; // Expand as desired
+    ];
 
     const gridElement = document.getElementById('grid');
     let grid = [];
@@ -98,7 +105,7 @@
 
     createGrid();
     loop();
-    setInterval(loop, 500);
+    setInterval(loop, 600); // Slightly slower for aesthetics
   </script>
 </body>
 </html>
