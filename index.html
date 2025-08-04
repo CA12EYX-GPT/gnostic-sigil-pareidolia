@@ -36,12 +36,6 @@
       /* animation: shimmer 6s ease-in-out infinite; */
     }
 
-    /* @keyframes shimmer {
-      0%   { opacity: 0.85; }
-      50%  { opacity: 1; }
-      100% { opacity: 0.85; }
-    } */
-
     .sigil {
       color: #e91e63 !important;
       text-shadow: 0 0 6px #e91e63;
@@ -61,7 +55,6 @@
       transition: color 1s ease, opacity 1s ease;
     }
 
-    /* 10-step trail from dark (near sigil) to light (tail) */
     .trail-10 { color: #222 !important; }
     .trail-9  { color: #333 !important; }
     .trail-8  { color: #444 !important; }
@@ -91,14 +84,12 @@
     const gridEl = document.getElementById('grid');
     const grid = Array.from({ length: cols }, () => Array(rows).fill(null));
 
-    // Create grid
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.innerText = randomLetter();
         cell.style.opacity = (0.6 + Math.random() * 0.3).toFixed(2);
-        /* cell.style.animationDelay = `${Math.random() * 5}s`; */
         grid[col][row] = cell;
         gridEl.appendChild(cell);
       }
@@ -148,12 +139,10 @@
             lastCell.innerText = randomLetter();
             lastCell.classList.remove('sigil');
             trailHistory.unshift(lastCell);
-
             if (trailHistory.length > 10) {
               const faded = trailHistory.pop();
               for (let i = 1; i <= 10; i++) faded.classList.remove(`trail-${i}`);
             }
-
             trailHistory.forEach((cell, index) => {
               for (let i = 1; i <= 10; i++) cell.classList.remove(`trail-${i}`);
               const step = 10 - Math.min(index, 9);
@@ -167,7 +156,7 @@
           cell.classList.add('sigil');
 
           col++;
-          setTimeout(step, 6); // Speed boost
+          setTimeout(step, 6);
         } else {
           if (lastCell) {
             lastCell.innerText = randomLetter();
@@ -185,34 +174,25 @@
     }
 
     const activeRows = new Set();
-    let intervalDelay = 120;
-    let mainInterval = setInterval(() => {
+
+    function triggerRandomRow() {
       const row = Math.floor(Math.random() * rows);
-      if (!activeRows.has(row)) {
+      if (activeRows.size < 4 && !activeRows.has(row)) {
         activeRows.add(row);
         animateRow(row, () => activeRows.delete(row));
       }
-    }, intervalDelay);
+    }
 
-    // Quiet moment mode
+    let intervalDelay = 120;
+    let mainInterval = setInterval(triggerRandomRow, intervalDelay);
+
+    // Quiet moment slowdown
     setInterval(() => {
       clearInterval(mainInterval);
-      mainInterval = setInterval(() => {
-        const row = Math.floor(Math.random() * rows);
-        if (!activeRows.has(row)) {
-          activeRows.add(row);
-          animateRow(row, () => activeRows.delete(row));
-        }
-      }, 400); // Slow down temporarily
+      mainInterval = setInterval(triggerRandomRow, 400);
       setTimeout(() => {
         clearInterval(mainInterval);
-        mainInterval = setInterval(() => {
-          const row = Math.floor(Math.random() * rows);
-          if (!activeRows.has(row)) {
-            activeRows.add(row);
-            animateRow(row, () => activeRows.delete(row));
-          }
-        }, intervalDelay); // Resume normal speed
+        mainInterval = setInterval(triggerRandomRow, intervalDelay);
       }, 3000 + Math.random() * 2000);
     }, 12000 + Math.random() * 8000);
   </script>
