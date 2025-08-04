@@ -36,10 +36,19 @@
     const rows = 30;
     const cols = 40;
     const minWordLength = 3;
-    const wordList = ["SUN", "MOON", "STAR", "DREAM", "LOVE", "HOPE", "PEACE", "WISH", "FALL", "DROP", "CODE", "RAIN", "WIND", "FIRE", "WARM", "COOL"]; // Expand as needed
+    const wordList = [
+      "SUN", "MOON", "STAR", "DREAM", "LOVE", "HOPE", "WISH", "DROP",
+      "CODE", "FIRE", "WARM", "COOL", "WIND", "SOUL", "FEEL", "EYES",
+      "RISE", "FLOW", "VOID", "REAL", "MIND", "GLOW", "PEACE", "TIME"
+    ]; // Expand as desired
 
     const gridElement = document.getElementById('grid');
     let grid = [];
+
+    function randomLetter() {
+      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      return letters[Math.floor(Math.random() * letters.length)];
+    }
 
     function createGrid() {
       gridElement.innerHTML = '';
@@ -55,11 +64,6 @@
         }
         grid.push(row);
       }
-    }
-
-    function randomLetter() {
-      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      return letters[Math.floor(Math.random() * letters.length)];
     }
 
     function refreshGrid() {
