@@ -14,8 +14,8 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(80, 1fr);
-      grid-template-rows: repeat(45, 1fr);
+      grid-template-columns: repeat(40, 1fr);
+      grid-template-rows: repeat(25, 1fr);
       width: 100vw;
       height: 100vh;
     }
@@ -23,10 +23,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.72rem;
+      font-size: min(3vw, 3vh); /* Scales on mobile */
       color: #f2f2f2;
       opacity: 0.85;
-      transition: color 0.3s;
+      transition: color 0.3s, opacity 0.3s;
     }
     .glow {
       color: teal !important;
@@ -40,8 +40,8 @@
   <div class="grid" id="grid"></div>
 
   <script>
-    const rows = 45;
-    const cols = 80;
+    const rows = 25;
+    const cols = 40;
     const gridElement = document.getElementById('grid');
     const grid = [];
 
@@ -70,7 +70,6 @@
       function updateNext() {
         if (col >= cols) return;
 
-        // Reset previous
         if (col > 0) {
           row[col - 1].classList.remove('trail');
         }
@@ -79,17 +78,14 @@
         cell.innerText = randomChar();
         cell.classList.add('glow');
 
-        // Add trail effect
         if (col > 0) {
           row[col - 1].classList.add('trail');
         }
 
-        // Remove glow from two steps ago
         if (col > 1) {
           row[col - 2].classList.remove('glow');
         }
 
-        // After final step, clear trail
         if (col === cols - 1) {
           setTimeout(() => {
             cell.classList.remove('glow');
@@ -98,7 +94,7 @@
         }
 
         col++;
-        setTimeout(updateNext, 5); // speed increased
+        setTimeout(updateNext, 5); // fast animation
       }
 
       updateNext();
@@ -124,11 +120,11 @@
     }
 
     function loop() {
-      const activeRows = [10, 20, 30, 40];
+      const activeRows = [5, 10, 15, 20];
       activeRows.forEach((rowIndex, i) => {
         setTimeout(() => {
           updateRow(rowIndex);
-          setTimeout(() => scanForWords(rowIndex), 600); // slight buffer to check for words
+          setTimeout(() => scanForWords(rowIndex), 600);
         }, i * 150);
       });
     }
