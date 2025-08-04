@@ -147,12 +147,19 @@ function scanRow(r) {
 }
 
 
-    // Loop through rows forever
-    let currentRow = 0;
-    setInterval(() => {
-      animateRow(currentRow);
-      currentRow = (currentRow + 1) % rows;
-    }, 200);
+// Track which rows are already animating
+const activeRows = new Set();
+
+// Trigger random rows at random intervals
+setInterval(() => {
+  const row = Math.floor(Math.random() * rows);
+
+  if (!activeRows.has(row)) {
+    activeRows.add(row);
+    animateRow(row, () => activeRows.delete(row));
+  }
+}, 120); // <-- SPEED BOOST: more frequent row starts
+
   </script>
 </body>
 </html>
