@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Waterfall Glow</title>
+  <title>Waterfall Grid</title>
   <style>
     body {
       margin: 0;
@@ -11,21 +11,27 @@
       font-family: monospace;
       overflow: hidden;
     }
+
     .grid {
       display: grid;
-      grid-template-columns: repeat(40, 1fr);
-      grid-auto-rows: 1.2em;
+      grid-template-columns: repeat(80, 1fr);
+      grid-auto-rows: 1.1em;
       width: 100vw;
       height: 100vh;
     }
+
     .cell {
       text-align: center;
-      font-size: 1em;
-      transition: color 0.2s;
+      font-size: 0.9em;
+      line-height: 1.1em;
+      opacity: 0.8;
+      transition: color 0.3s ease;
     }
+
     .glow {
       color: teal;
       font-weight: bold;
+      opacity: 1;
     }
   </style>
 </head>
@@ -33,13 +39,22 @@
   <div id="grid" class="grid"></div>
 
   <script>
-    const rows = 30;
-    const cols = 40;
+    const rows = 45;
+    const cols = 80;
     const minWordLength = 3;
-    const wordList = ["SUN", "MOON", "STAR", "DREAM", "LOVE", "HOPE", "PEACE", "WISH", "FALL", "DROP", "CODE", "RAIN", "WIND", "FIRE", "WARM", "COOL"]; // Expand as needed
+    const wordList = [
+      "SUN", "MOON", "STAR", "LOVE", "DREAM", "HOPE", "WISH", "DROP", "VOID",
+      "FLOW", "REAL", "TIME", "SOUL", "FEEL", "MIND", "GLOW", "RISE", "EYES",
+      "CODE", "FIRE"
+    ];
 
     const gridElement = document.getElementById('grid');
     let grid = [];
+
+    function randomLetter() {
+      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      return letters[Math.floor(Math.random() * letters.length)];
+    }
 
     function createGrid() {
       gridElement.innerHTML = '';
@@ -57,16 +72,10 @@
       }
     }
 
-    function randomLetter() {
-      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      return letters[Math.floor(Math.random() * letters.length)];
-    }
-
     function refreshGrid() {
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           grid[r][c].innerText = randomLetter();
-          grid[r][c].classList.remove('glow');
         }
       }
     }
@@ -74,10 +83,10 @@
     function scanForWords() {
       for (let r = 0; r < rows; r++) {
         let rowText = grid[r].map(cell => cell.innerText).join('');
-        for (let start = 0; start <= cols - minWordLength; start++) {
+        for (let start = 0; start < cols - minWordLength; start++) {
           for (let len = minWordLength; len <= cols - start; len++) {
-            const slice = rowText.slice(start, start + len);
-            if (wordList.includes(slice)) {
+            const word = rowText.slice(start, start + len);
+            if (wordList.includes(word)) {
               for (let i = 0; i < len; i++) {
                 grid[r][start + i].classList.add('glow');
               }
@@ -87,8 +96,17 @@
       }
     }
 
+    function clearGlow() {
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          grid[r][c].classList.remove('glow');
+        }
+      }
+    }
+
     function loop() {
       refreshGrid();
+      clearGlow();
       scanForWords();
     }
 
