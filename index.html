@@ -23,7 +23,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: min(3vw, 3vh); /* Scales on mobile */
+      font-size: min(3vw, 3vh);
       color: #f2f2f2;
       opacity: 0.85;
       transition: color 0.3s, opacity 0.3s;
@@ -76,25 +76,23 @@
 
         const cell = row[col];
         cell.innerText = randomChar();
-        cell.classList.add('glow');
 
         if (col > 0) {
           row[col - 1].classList.add('trail');
         }
 
         if (col > 1) {
-          row[col - 2].classList.remove('glow');
+          row[col - 2].classList.remove('trail');
         }
 
         if (col === cols - 1) {
           setTimeout(() => {
-            cell.classList.remove('glow');
             row[col - 1]?.classList.remove('trail');
           }, 200);
         }
 
         col++;
-        setTimeout(updateNext, 5); // fast animation
+        setTimeout(updateNext, 5);
       }
 
       updateNext();
