@@ -97,10 +97,11 @@
     // Create grid
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
-        const cell = document.createElement('div');
+        const cell = document.createElement('div');const cell = document.createElement('div');
         cell.className = 'cell';
         cell.innerText = randomLetter();
         cell.style.opacity = (0.6 + Math.random() * 0.3).toFixed(2);
+        cell.style.animationDelay = `${Math.random() * 5}s`;
         grid[col][row] = cell;
         gridEl.appendChild(cell);
       }
