@@ -44,7 +44,6 @@
     const cols = 40;
     const gridElement = document.getElementById('grid');
     const grid = [];
-
     const wordList = ['SUN', 'HOPE', 'VOID', 'ECHO', 'RAY', 'ARC', 'ORB', 'SIGN', 'CODE', 'PATH'];
     const sigils = ['◉', '∆', '⟁'];
 
@@ -64,45 +63,34 @@
       return chars[Math.floor(Math.random() * chars.length)];
     }
 
-    function updateRow(rowIndex) {
+    function updateRowWithSigil(rowIndex) {
       const row = grid[rowIndex];
+      const sigil = sigils[Math.floor(Math.random() * sigils.length)];
       let col = 0;
 
-      function updateNext() {
-        if (col >= cols) return;
-
+      function step() {
         if (col > 0) {
-          row[col - 1].classList.remove('trail');
-        }
-
-        const cell = row[col];
-
-        // First letter = sigil, then normal random chars
-        if (col === 0) {
-          cell.innerText = sigils[Math.floor(Math.random() * sigils.length)];
-        } else {
-          cell.innerText = randomChar();
-        }
-
-        if (col > 0) {
+          // Set previous cell to a trail
+          row[col - 1].innerText = randomChar();
+          row[col - 1].classList.remove('glow');
           row[col - 1].classList.add('trail');
         }
 
-        if (col > 1) {
-          row[col - 2].classList.remove('trail');
+        if (col < cols) {
+          row[col].innerText = sigil;
+          col++;
+          setTimeout(step, 10);
+        } else {
+          // End of row: remove trail + glow + reset to random
+          for (let i = 0; i < cols; i++) {
+            row[i].classList.remove('trail');
+            row[i].classList.remove('glow');
+            row[i].innerText = randomChar();
+          }
         }
-
-        if (col === cols - 1) {
-          setTimeout(() => {
-            row[col - 1]?.classList.remove('trail');
-          }, 200);
-        }
-
-        col++;
-        setTimeout(updateNext, 5);
       }
 
-      updateNext();
+      step();
     }
 
     function scanForWords(rowIndex) {
@@ -126,17 +114,16 @@
 
     function getRandomRows(n) {
       const indices = [...Array(rows).keys()];
-      const shuffled = indices.sort(() => 0.5 - Math.random());
-      return shuffled.slice(0, n);
+      return indices.sort(() => 0.5 - Math.random()).slice(0, n);
     }
 
     function loop() {
-      const activeRows = getRandomRows(3); // animate 3 random rows each loop
+      const activeRows = getRandomRows(3);
       activeRows.forEach((rowIndex, i) => {
         setTimeout(() => {
-          updateRow(rowIndex);
-          setTimeout(() => scanForWords(rowIndex), 600);
-        }, i * 150);
+          updateRowWithSigil(rowIndex);
+          setTimeout(() => scanForWords(rowIndex), 700); // buffer after sigil finishes
+        }, i * 200);
       });
     }
 
