@@ -61,7 +61,7 @@
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
     const gridEl = document.getElementById('grid');
-    const grid = [];
+    const grid = Array.from({ length: cols }, () => Array(rows).fill(null));
 
     const wordList = new Set([
       "AND", "ART", "EYE", "SUN", "FUN", "RUN", "YES", "YOU", "SEE", "END", "NOW", "AIR", "KEY", "WAY", "OLD", "NEW", "GOD", "ONE", "TOP", "OWN",
@@ -78,14 +78,13 @@
       return sigils[Math.floor(Math.random() * sigils.length)];
     }
 
-    // Create grid
-    for (let col = 0; col < cols; col++) {
-      grid[col] = [];
-      for (let row = 0; row < rows; row++) {
+    // Create full grid of 80x45 cells
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.innerText = randomLetter();
-        cell.style.opacity = (0.6 + Math.random() * 0.3).toFixed(2); // shimmer
+        cell.style.opacity = (0.6 + Math.random() * 0.3).toFixed(2);
         grid[col][row] = cell;
         gridEl.appendChild(cell);
       }
@@ -123,16 +122,15 @@
             }
           }
 
-          // Clean glows in current row
+          // Clean glows and check horizontal words in current row
           if (position < rows) {
             for (let c = 0; c < cols; c++) {
               grid[c][position].classList.remove('glow');
             }
 
-            for (let startCol = 0; startCol <= cols - 5; startCol++) {
+            for (let startCol = 0; startCol <= cols - 3; startCol++) {
               for (let len = 3; len <= 5; len++) {
-                const endCol = startCol + len - 1;
-                if (endCol >= cols) continue;
+                if (startCol + len > cols) continue;
                 const lettersInRow = [];
                 const cells = [];
                 let skip = false;
@@ -150,7 +148,7 @@
                 if (!skip) {
                   const word = lettersInRow.join('');
                   if (wordList.has(word)) {
-                    cells.forEach(cell => cell.classList.remove('glow')); // ensure no conflict
+                    cells.forEach(cell => cell.classList.remove('glow'));
                     cells.forEach(cell => cell.classList.add('glow'));
                     setTimeout(() => {
                       cells.forEach(cell => cell.classList.remove('glow'));
