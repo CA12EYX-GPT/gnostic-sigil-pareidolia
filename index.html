@@ -5,52 +5,52 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gnostic Sigil Pareidolia</title>
   <style>
-body {
-  margin: 0;
-  background: #0b0b0f;
-  overflow: hidden;
-  font-family: 'Courier New', Courier, monospace;
-}
+    body {
+      margin: 0;
+      background: #0b0b0f;
+      overflow: hidden;
+      font-family: 'Courier New', Courier, monospace;
+    }
 
-.grid {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  display: grid;
-  grid-template-columns: repeat(80, 1fr); /* ← More columns = denser */
-  grid-template-rows: repeat(45, 1fr);    /* ← More rows = tighter */
-  font-size: 0.72rem;                     /* ← Smaller font = tighter look */
-}
+    .grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: repeat(80, 1fr);
+      grid-template-rows: repeat(45, 1fr);
+      font-size: 0.72rem;
+    }
 
-.cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  user-select: none;
-  color: #ccc;
-  transition: color 0.8s ease, text-shadow 0.8s ease;
-  opacity: 0.85;
-  text-shadow: 0 0 2px #333;
-}
+    .cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      color: #ccc;
+      transition: color 0.8s ease, text-shadow 0.8s ease;
+      opacity: 0.85;
+      text-shadow: 0 0 2px #333;
+    }
 
-.trail {
-  color: #666 !important;
-  opacity: 0.5 !important;
-}
+    .trail {
+      color: #666 !important;
+      opacity: 0.5 !important;
+    }
 
-.sigil {
-  color: #e91e63 !important;
-  text-shadow: 0 0 6px #e91e63;
-}
+    .sigil {
+      color: #e91e63 !important;
+      text-shadow: 0 0 6px #e91e63;
+    }
 
-.glow {
-  color: #00f0ff !important;
-  font-weight: bold;
-  opacity: 1;
-  text-shadow: 0 0 6px #00f0ff, 0 0 12px #00f0ff;
-}
+    .glow {
+      color: #00f0ff !important;
+      font-weight: bold;
+      opacity: 1;
+      text-shadow: 0 0 6px #00f0ff, 0 0 12px #00f0ff;
+    }
   </style>
 </head>
 <body>
@@ -64,10 +64,10 @@ body {
     const grid = [];
 
     const wordList = new Set([
-      "AND","ART","EYE","SUN","FUN","RUN","YES","YOU","SEE","END","NOW","AIR","KEY","WAY","OLD","NEW","GOD","ONE","TOP","OWN",
-      "TIME","LOVE","SOUL","MIND","SIGN","CALL","DARK","FEEL","HOPE","FREE","GLOW","NAME","TRUE","OPEN","STAR","WISH","RING","LIFE",
-      "LIGHT","TRUTH","HEART","SIGIL","ALIGN","GRACE","FORCE","SIGHT","INNER","SPARK","WORLD","SENSE","PEACE","CYCLE","SHIFT","DREAM",
-      "GATES","VIBES","UNITY","SHELL","ECHOE","FLAME","ALIVE","BREAT","VOICE","NIGHT","MORPH","STILL","CRYPT","POWER","DEPTH","GIVEN"
+      "AND", "ART", "EYE", "SUN", "FUN", "RUN", "YES", "YOU", "SEE", "END", "NOW", "AIR", "KEY", "WAY", "OLD", "NEW", "GOD", "ONE", "TOP", "OWN",
+      "TIME", "LOVE", "SOUL", "MIND", "SIGN", "CALL", "DARK", "FEEL", "HOPE", "FREE", "GLOW", "NAME", "TRUE", "OPEN", "STAR", "WISH", "RING", "LIFE",
+      "LIGHT", "TRUTH", "HEART", "SIGIL", "ALIGN", "GRACE", "FORCE", "SIGHT", "INNER", "SPARK", "WORLD", "SENSE", "PEACE", "CYCLE", "SHIFT", "DREAM",
+      "GATES", "VIBES", "UNITY", "SHELL", "ECHOE", "FLAME", "ALIVE", "BREAT", "VOICE", "NIGHT", "MORPH", "STILL", "CRYPT", "POWER", "DEPTH", "GIVEN"
     ]);
 
     function randomLetter() {
@@ -85,7 +85,7 @@ body {
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.innerText = randomLetter();
-        cell.style.opacity = (0.6 + Math.random() * 0.3).toFixed(2); // random shimmer
+        cell.style.opacity = (0.6 + Math.random() * 0.3).toFixed(2); // shimmer
         grid[col][row] = cell;
         gridEl.appendChild(cell);
       }
@@ -123,8 +123,12 @@ body {
             }
           }
 
-          // After letter update, check for horizontal words
+          // Clean glows in current row
           if (position < rows) {
+            for (let c = 0; c < cols; c++) {
+              grid[c][position].classList.remove('glow');
+            }
+
             for (let startCol = 0; startCol <= cols - 5; startCol++) {
               for (let len = 3; len <= 5; len++) {
                 const endCol = startCol + len - 1;
