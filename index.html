@@ -12,7 +12,6 @@
       font-family: 'Courier New', monospace;
       overflow: hidden;
     }
-
     .grid {
       display: grid;
       grid-template-columns: repeat(80, 1fr);
@@ -20,7 +19,6 @@
       width: 100vw;
       height: 100vh;
     }
-
     .cell {
       display: flex;
       align-items: center;
@@ -28,173 +26,114 @@
       font-size: 0.72rem;
       color: #f2f2f2;
       opacity: 0.85;
-      transition: color 0.5s ease, text-shadow 0.5s ease;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      box-sizing: border-box;
-      /* animation: shimmer 6s ease-in-out infinite; */
+      transition: color 0.3s;
     }
-
-    .sigil {
-      color: #e91e63 !important;
-      text-shadow: 0 0 6px #e91e63;
-    }
-
     .glow {
-      color: #00f0ff !important;
-      text-shadow: 0 0 6px #00f0ff;
-      font-weight: bold;
-      opacity: 1;
+      color: teal !important;
     }
-
-    .glow-fade {
-      color: #ccc !important;
-      opacity: 0.75 !important;
-      text-shadow: none !important;
-      transition: color 1s ease, opacity 1s ease;
+    .trail {
+      opacity: 0.3 !important;
     }
-
-    .trail-10 { color: #222 !important; }
-    .trail-9  { color: #333 !important; }
-    .trail-8  { color: #444 !important; }
-    .trail-7  { color: #555 !important; }
-    .trail-6  { color: #666 !important; }
-    .trail-5  { color: #777 !important; }
-    .trail-4  { color: #888 !important; }
-    .trail-3  { color: #aaa !important; }
-    .trail-2  { color: #ccc !important; }
-    .trail-1  { color: #eee !important; }
   </style>
 </head>
 <body>
-  <div id="grid" class="grid"></div>
+  <div class="grid" id="grid"></div>
 
   <script>
-    const cols = 80;
     const rows = 45;
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
-    const wordList = new Set([
-      "SUN", "MOON", "STAR", "DREAM", "LOVE", "HOPE", "WISH", "DROP", "VOID",
-      "FLOW", "REAL", "TIME", "SOUL", "FEEL", "MIND", "GLOW", "RISE", "EYES",
-      "CODE", "FIRE", "ART", "ECHO", "LIGHT", "TRUTH", "ALIVE", "HEART", "SEE", "NOW", "OPEN"
-    ]);
+    const cols = 80;
+    const gridElement = document.getElementById('grid');
+    const grid = [];
 
-    const gridEl = document.getElementById('grid');
-    const grid = Array.from({ length: cols }, () => Array(rows).fill(null));
+    const wordList = ['SUN', 'HOPE', 'VOID', 'ECHO', 'RAY', 'ARC', 'ORB', 'SIGN', 'CODE', 'PATH'];
 
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
+    for (let r = 0; r < rows; r++) {
+      grid[r] = [];
+      for (let c = 0; c < cols; c++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
-        cell.innerText = randomLetter();
-        cell.style.opacity = (0.6 + Math.random() * 0.3).toFixed(2);
-        grid[col][row] = cell;
-        gridEl.appendChild(cell);
+        cell.innerText = randomChar();
+        gridElement.appendChild(cell);
+        grid[r][c] = cell;
       }
     }
 
-    function randomLetter() {
-      return letters[Math.floor(Math.random() * letters.length)];
+    function randomChar() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      return chars[Math.floor(Math.random() * chars.length)];
     }
 
-    function randomSigil() {
-      return sigils[Math.floor(Math.random() * sigils.length)];
-    }
-
-    function scanRow(r) {
-      const rowText = grid.map(col => col[r].innerText).join('');
-      for (let start = 0; start <= cols - 3; start++) {
-        for (let len = 3; len <= 6; len++) {
-          const word = rowText.slice(start, start + len);
-          if (wordList.has(word)) {
-            const cells = [];
-            for (let i = 0; i < len; i++) {
-              const cell = grid[start + i][r];
-              cell.classList.remove('glow-fade');
-              cell.classList.add('glow');
-              cells.push(cell);
-            }
-            setTimeout(() => {
-              cells.forEach(cell => {
-                cell.classList.remove('glow');
-                cell.classList.add('glow-fade');
-              });
-            }, 1200);
-          }
-        }
-      }
-    }
-
-    function animateRow(rowIdx, onComplete = () => {}) {
+    function updateRow(rowIndex) {
+      const row = grid[rowIndex];
       let col = 0;
-      const sigil = randomSigil();
-      let lastCell = null;
-      const trailHistory = [];
 
-      function step() {
-        if (col < cols) {
-          if (lastCell) {
-            lastCell.innerText = randomLetter();
-            lastCell.classList.remove('sigil');
-            trailHistory.unshift(lastCell);
-            if (trailHistory.length > 10) {
-              const faded = trailHistory.pop();
-              for (let i = 1; i <= 10; i++) faded.classList.remove(`trail-${i}`);
-            }
-            trailHistory.forEach((cell, index) => {
-              for (let i = 1; i <= 10; i++) cell.classList.remove(`trail-${i}`);
-              const step = 10 - Math.min(index, 9);
-              cell.classList.add(`trail-${step}`);
-            });
-          }
+      function updateNext() {
+        if (col >= cols) return;
 
-          const cell = grid[col][rowIdx];
-          lastCell = cell;
-          cell.innerText = sigil;
-          cell.classList.add('sigil');
-
-          col++;
-          setTimeout(step, 6);
-        } else {
-          if (lastCell) {
-            lastCell.innerText = randomLetter();
-            lastCell.classList.remove('sigil');
-          }
-          trailHistory.forEach(cell => {
-            for (let i = 1; i <= 10; i++) cell.classList.remove(`trail-${i}`);
-          });
-          scanRow(rowIdx);
-          onComplete();
+        // Reset previous
+        if (col > 0) {
+          row[col - 1].classList.remove('trail');
         }
+
+        const cell = row[col];
+        cell.innerText = randomChar();
+        cell.classList.add('glow');
+
+        // Add trail effect
+        if (col > 0) {
+          row[col - 1].classList.add('trail');
+        }
+
+        // Remove glow from two steps ago
+        if (col > 1) {
+          row[col - 2].classList.remove('glow');
+        }
+
+        // After final step, clear trail
+        if (col === cols - 1) {
+          setTimeout(() => {
+            cell.classList.remove('glow');
+            row[col - 1]?.classList.remove('trail');
+          }, 200);
+        }
+
+        col++;
+        setTimeout(updateNext, 5); // speed increased
       }
 
-      step();
+      updateNext();
     }
 
-    const activeRows = new Set();
+    function scanForWords(rowIndex) {
+      const row = grid[rowIndex];
+      const text = row.map(cell => cell.innerText).join('');
 
-    function triggerRandomRow() {
-      const row = Math.floor(Math.random() * rows);
-      if (activeRows.size < 4 && !activeRows.has(row)) {
-        activeRows.add(row);
-        animateRow(row, () => activeRows.delete(row));
-      }
+      wordList.forEach(word => {
+        const start = text.indexOf(word);
+        if (start !== -1) {
+          for (let i = 0; i < word.length; i++) {
+            row[start + i].classList.add('glow');
+          }
+          setTimeout(() => {
+            for (let i = 0; i < word.length; i++) {
+              row[start + i].classList.remove('glow');
+            }
+          }, 1000);
+        }
+      });
     }
 
-    let intervalDelay = 120;
-    let mainInterval = setInterval(triggerRandomRow, intervalDelay);
+    function loop() {
+      const activeRows = [10, 20, 30, 40];
+      activeRows.forEach((rowIndex, i) => {
+        setTimeout(() => {
+          updateRow(rowIndex);
+          setTimeout(() => scanForWords(rowIndex), 600); // slight buffer to check for words
+        }, i * 150);
+      });
+    }
 
-    // Quiet moment slowdown
-    setInterval(() => {
-      clearInterval(mainInterval);
-      mainInterval = setInterval(triggerRandomRow, 400);
-      setTimeout(() => {
-        clearInterval(mainInterval);
-        mainInterval = setInterval(triggerRandomRow, intervalDelay);
-      }, 3000 + Math.random() * 2000);
-    }, 12000 + Math.random() * 8000);
+    setInterval(loop, 2000);
   </script>
 </body>
 </html>
