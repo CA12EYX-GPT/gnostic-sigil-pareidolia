@@ -148,7 +148,7 @@
           
           trailHistory.forEach((cell, index) => {
             for (let i = 1; i <= 10; i++) cell.classList.remove(`trail-${i}`);
-            const step = Math.min(index + 1, 10);
+            const step = 10 - Math.min(index, 9);
             cell.classList.add(`trail-${step}`);
           });
 
