@@ -37,11 +37,6 @@
       text-shadow: 0 0 4px #e91e63;
     }
 
-    .trail {
-      color: #888 !important;
-      opacity: 0.5 !important;
-    }
-
     .glow {
       color: #00f0ff !important;
       text-shadow: 0 0 6px #00f0ff;
@@ -121,22 +116,29 @@
 
     function animateRow(rowIdx, onComplete = () => {}) {
       let col = 0;
+      const sigil = randomSigil();
+      let lastCell = null;
 
       function step() {
         if (col < cols) {
-          const cell = grid[col][rowIdx];
-          const isSigil = Math.random() < 0.02;
-          cell.innerText = isSigil ? randomSigil() : randomLetter();
-          cell.classList.remove('glow', 'glow-fade');
-          cell.classList.add(isSigil ? 'sigil' : 'trail');
+          if (lastCell) {
+            lastCell.innerText = randomLetter();
+            lastCell.classList.remove('sigil');
+          }
 
-          setTimeout(() => {
-            cell.classList.remove('sigil', 'trail');
-          }, 600);
+          const cell = grid[col][rowIdx];
+          lastCell = cell;
+          cell.innerText = sigil;
+          cell.classList.add('sigil');
 
           col++;
-          requestAnimationFrame(step);
+          setTimeout(step, 12); // smoother sigil travel
         } else {
+          // Clear the final sigil
+          if (lastCell) {
+            lastCell.innerText = randomLetter();
+            lastCell.classList.remove('sigil');
+          }
           scanRow(rowIdx);
           onComplete();
         }
@@ -145,41 +147,34 @@
       step();
     }
 
-    // Track which rows are active to avoid overlap
+    // Track which rows are active to avoid overlaps
     const activeRows = new Set();
-
     let quiet = false;
     let intervalDelay = 120;
 
     function triggerRandomRows() {
       const row = Math.floor(Math.random() * rows);
-
       if (!activeRows.has(row)) {
         activeRows.add(row);
         animateRow(row, () => activeRows.delete(row));
       }
     }
 
-    // Interval driver
-    setInterval(() => {
-      triggerRandomRows();
-    }, () => quiet ? 400 : intervalDelay); // actual interval is fixed below
-
-    // Loop driver with dynamic interval
+    // Main animation driver
     let mainInterval = setInterval(triggerRandomRows, intervalDelay);
 
-    // Quiet moment cycle every ~12–20s
+    // Quiet mode (every 12–20s, slow down for 3–5s)
     setInterval(() => {
       quiet = true;
       clearInterval(mainInterval);
-      mainInterval = setInterval(triggerRandomRows, 400); // slow down
+      mainInterval = setInterval(triggerRandomRows, 400);
 
       setTimeout(() => {
         quiet = false;
         clearInterval(mainInterval);
-        mainInterval = setInterval(triggerRandomRows, intervalDelay); // restore
-      }, 3000 + Math.random() * 2000); // quiet lasts 3–5 seconds
-    }, 12000 + Math.random() * 8000); // happens every 12–20s
+        mainInterval = setInterval(triggerRandomRows, intervalDelay);
+      }, 3000 + Math.random() * 2000);
+    }, 12000 + Math.random() * 8000);
   </script>
 </body>
 </html>
