@@ -47,7 +47,6 @@
     const wordList = ['SUN', 'HOPE', 'VOID', 'ECHO', 'RAY', 'ARC', 'ORB', 'SIGN', 'CODE', 'PATH'];
     const sigils = ['◉', '∆', '⟁'];
 
-    // Grid setup
     for (let r = 0; r < rows; r++) {
       grid[r] = [];
       for (let c = 0; c < cols; c++) {
@@ -71,10 +70,15 @@
 
       function step() {
         if (col > 0) {
-          // Reset previous to random char + trail
           const prev = row[col - 1];
           prev.innerText = randomChar();
           prev.classList.add('trail');
+        }
+
+        // Remove old trail (10 behind)
+        if (col > 10) {
+          const old = row[col - 11];
+          old.classList.remove('trail');
         }
 
         if (col < cols) {
@@ -82,7 +86,7 @@
           col++;
           setTimeout(step, 10);
         } else {
-          // Cleanup: restore row to fresh chars, remove trail/glow
+          // Cleanup: reset all to fresh
           for (let i = 0; i < cols; i++) {
             row[i].innerText = randomChar();
             row[i].classList.remove('trail');
