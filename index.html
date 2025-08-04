@@ -47,6 +47,7 @@
     const wordList = ['SUN', 'HOPE', 'VOID', 'ECHO', 'RAY', 'ARC', 'ORB', 'SIGN', 'CODE', 'PATH'];
     const sigils = ['◉', '∆', '⟁'];
 
+    // Grid setup
     for (let r = 0; r < rows; r++) {
       grid[r] = [];
       for (let c = 0; c < cols; c++) {
@@ -70,10 +71,10 @@
 
       function step() {
         if (col > 0) {
-          // Set previous cell to a trail
-          row[col - 1].innerText = randomChar();
-          row[col - 1].classList.remove('glow');
-          row[col - 1].classList.add('trail');
+          // Reset previous to random char + trail
+          const prev = row[col - 1];
+          prev.innerText = randomChar();
+          prev.classList.add('trail');
         }
 
         if (col < cols) {
@@ -81,11 +82,11 @@
           col++;
           setTimeout(step, 10);
         } else {
-          // End of row: remove trail + glow + reset to random
+          // Cleanup: restore row to fresh chars, remove trail/glow
           for (let i = 0; i < cols; i++) {
+            row[i].innerText = randomChar();
             row[i].classList.remove('trail');
             row[i].classList.remove('glow');
-            row[i].innerText = randomChar();
           }
         }
       }
@@ -122,7 +123,7 @@
       activeRows.forEach((rowIndex, i) => {
         setTimeout(() => {
           updateRowWithSigil(rowIndex);
-          setTimeout(() => scanForWords(rowIndex), 700); // buffer after sigil finishes
+          setTimeout(() => scanForWords(rowIndex), 700);
         }, i * 200);
       });
     }
