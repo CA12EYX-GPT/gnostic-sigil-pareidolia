@@ -141,16 +141,17 @@
             lastCell.innerText = randomLetter();
             lastCell.classList.remove('sigil');
             trailHistory.unshift(lastCell);
-            if (trailHistory.length > 3) {
-              const faded = trailHistory.pop();
-              faded.classList.remove('trail-1', 'trail-2', 'trail-3');
-            }
-            trailHistory.forEach((cell, index) => {
-              cell.classList.remove('trail-1', 'trail-2', 'trail-3');
-              if (index === 0) cell.classList.add('trail-1');
-              if (index === 1) cell.classList.add('trail-2');
-              if (index === 2) cell.classList.add('trail-3');
-            });
+           if (trailHistory.length > 10) {
+            const faded = trailHistory.pop();
+            for (let i = 1; i <= 10; i++) faded.classList.remove(`trail-${i}`);
+          }
+          
+          trailHistory.forEach((cell, index) => {
+            for (let i = 1; i <= 10; i++) cell.classList.remove(`trail-${i}`);
+            const step = Math.min(index + 1, 10);
+            cell.classList.add(`trail-${step}`);
+          });
+
           }
 
           const cell = grid[col][rowIdx];
@@ -159,7 +160,7 @@
           cell.classList.add('sigil');
 
           col++;
-          setTimeout(step, 12);
+          setTimeout(step, 6);
         } else {
           if (lastCell) {
             lastCell.innerText = randomLetter();
