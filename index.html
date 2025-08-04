@@ -47,6 +47,13 @@
       text-shadow: 0 0 6px #00f0ff;
       font-weight: bold;
       opacity: 1;
+    .glow-fade {
+    color: #ccc !important;
+    opacity: 0.75 !important;
+    text-shadow: none !important;
+    transition: color 1s ease, opacity 1s ease;
+}
+
     }
   </style>
 </head>
@@ -116,19 +123,29 @@
     }
 
     // Check for real horizontal words in a given row
-    function scanRow(r) {
-      const rowText = grid[r].map(cell => cell.innerText).join('');
-      for (let start = 0; start <= cols - 3; start++) {
-        for (let len = 3; len <= 6; len++) {
-          const word = rowText.slice(start, start + len);
-          if (wordList.has(word)) {
-            for (let i = 0; i < len; i++) {
-              grid[r][start + i].classList.add('glow');
-            }
-          }
-        }
+function scanRow(r) {
+  const rowText = grid[r].map(cell => cell.innerText).join('');
+  for (let start = 0; start <= cols - 3; start++) {
+    for (let len = 3; len <= 6; len++) {
+      const word = rowText.slice(start, start + len);
+      if (wordList.has(word)) {
+        const cells = grid[r].slice(start, start + len);
+        cells.forEach(cell => {
+          cell.classList.remove('glow-fade');
+          cell.classList.add('glow');
+        });
+
+        setTimeout(() => {
+          cells.forEach(cell => {
+            cell.classList.remove('glow');
+            cell.classList.add('glow-fade');
+          });
+        }, 1200);
       }
     }
+  }
+}
+
 
     // Loop through rows forever
     let currentRow = 0;
