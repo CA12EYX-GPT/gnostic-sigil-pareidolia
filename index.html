@@ -1,173 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gnostic Sigil Pareidolia</title>
+  <meta charset="UTF-8">
+  <title>Waterfall Glow</title>
   <style>
     body {
       margin: 0;
-      background: #0b0b0f;
+      background: black;
+      color: white;
+      font-family: monospace;
       overflow: hidden;
-      font-family: 'Courier New', Courier, monospace;
     }
-
     .grid {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
       display: grid;
       grid-template-columns: repeat(40, 1fr);
-      grid-template-rows: repeat(30, 1fr);
-      font-size: 0.85rem;
+      grid-auto-rows: 1.2em;
+      width: 100vw;
+      height: 100vh;
     }
-
     .cell {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
-      color: #eaeaea;
-      transition: color 0.8s ease;
+      text-align: center;
+      font-size: 1em;
+      transition: color 0.2s;
     }
-
-    .trail {
-      color: #888 !important;
-    }
-
-    .sigil {
-      color: #e91e63 !important;
-      text-shadow: 0 0 6px #e91e63;
-    }
-
     .glow {
-      color: #00f0ff !important;
-      text-shadow: 0 0 8px #00f0ff;
+      color: teal;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <div class="grid" id="grid"></div>
-  <script>
-    const cols = 40;
-    const rows = 30;
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const sigils = ['◉', '∆', '⟁', '✶', '⊙'];
-    const gridEl = document.getElementById('grid');
-    const grid = [];
+  <div id="grid" class="grid"></div>
 
-    const wordList = new Set([
-      "AND","ART","EYE","SUN","FUN","RUN","YES","YOU","SEE","END","NOW","AIR","KEY","WAY","OLD","NEW","GOD","ONE","TOP","OWN",
-      "TIME","LOVE","SOUL","MIND","SIGN","CALL","DARK","FEEL","HOPE","FREE","GLOW","NAME","TRUE","OPEN","STAR","WISH","RING","LIFE",
-      "LIGHT","TRUTH","HEART","SIGIL","ALIGN","GRACE","FORCE","SIGHT","INNER","SPARK","WORLD","SENSE","PEACE","CYCLE","SHIFT","DREAM",
-      "GATES","VIBES","UNITY","SHELL","ECHOE","FLAME","ALIVE","BREAT","VOICE","NIGHT","MORPH","STILL","CRYPT","POWER","DEPTH","GIVEN"
-    ]);
+  <script>
+    const rows = 30;
+    const cols = 40;
+    const minWordLength = 3;
+    const wordList = ["SUN", "MOON", "STAR", "DREAM", "LOVE", "HOPE", "PEACE", "WISH", "FALL", "DROP", "CODE", "RAIN", "WIND", "FIRE", "WARM", "COOL"]; // Expand as needed
+
+    const gridElement = document.getElementById('grid');
+    let grid = [];
+
+    function createGrid() {
+      gridElement.innerHTML = '';
+      grid = [];
+      for (let r = 0; r < rows; r++) {
+        let row = [];
+        for (let c = 0; c < cols; c++) {
+          const span = document.createElement('span');
+          span.className = 'cell';
+          span.innerText = randomLetter();
+          gridElement.appendChild(span);
+          row.push(span);
+        }
+        grid.push(row);
+      }
+    }
 
     function randomLetter() {
+      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
       return letters[Math.floor(Math.random() * letters.length)];
     }
 
-    function randomSigil() {
-      return sigils[Math.floor(Math.random() * sigils.length)];
-    }
-
-    // Create grid
-    for (let col = 0; col < cols; col++) {
-      grid[col] = [];
-      for (let row = 0; row < rows; row++) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.innerText = randomLetter();
-        grid[col][row] = cell;
-        gridEl.appendChild(cell);
-      }
-    }
-
-    function startDrop(col) {
-      const dropLength = Math.floor(Math.random() * 6) + 5;
-      let position = 0;
-
-      const interval = setInterval(() => {
-        if (position < rows + dropLength) {
-          for (let i = 0; i < dropLength; i++) {
-            const row = position - i;
-            if (row >= 0 && row < rows) {
-              const cell = grid[col][row];
-              const isLead = i === 0;
-              const showSigil = Math.random() < 0.03;
-
-              if (isLead && showSigil) {
-                cell.innerText = randomSigil();
-                cell.classList.add('sigil');
-              } else if (isLead) {
-                cell.innerText = randomLetter();
-              }
-
-              cell.classList.add('trail');
-
-              setTimeout(() => {
-                if (isLead && showSigil) {
-                  cell.innerText = randomLetter();
-                  cell.classList.remove('sigil');
-                }
-                cell.classList.remove('trail');
-              }, 800);
-            }
-          }
-
-          // After letter update, check for horizontal words
-          if (position < rows) {
-            for (let startCol = 0; startCol <= cols - 5; startCol++) {
-              for (let len = 3; len <= 5; len++) {
-                const endCol = startCol + len - 1;
-                if (endCol >= cols) continue;
-                const lettersInRow = [];
-                const cells = [];
-                let skip = false;
-
-                for (let i = 0; i < len; i++) {
-                  const cell = grid[startCol + i][position];
-                  if (!cell || cell.classList.contains('sigil')) {
-                    skip = true;
-                    break;
-                  }
-                  lettersInRow.push(cell.innerText);
-                  cells.push(cell);
-                }
-
-                if (!skip) {
-                  const word = lettersInRow.join('');
-                  if (wordList.has(word)) {
-                    cells.forEach(cell => cell.classList.add('glow'));
-                    setTimeout(() => {
-                      cells.forEach(cell => cell.classList.remove('glow'));
-                    }, 1200);
-                  }
-                }
-              }
-            }
-          }
-
-          position++;
-        } else {
-          clearInterval(interval);
+    function refreshGrid() {
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          grid[r][c].innerText = randomLetter();
+          grid[r][c].classList.remove('glow');
         }
-      }, 100);
-    }
-
-    function triggerRandomDrops() {
-      const num = Math.floor(Math.random() * 4) + 2;
-      const availableCols = [...Array(cols).keys()];
-      for (let i = 0; i < num; i++) {
-        const index = Math.floor(Math.random() * availableCols.length);
-        const col = availableCols.splice(index, 1)[0];
-        startDrop(col);
       }
     }
 
-    setInterval(triggerRandomDrops, 400);
+    function scanForWords() {
+      for (let r = 0; r < rows; r++) {
+        let rowText = grid[r].map(cell => cell.innerText).join('');
+        for (let start = 0; start <= cols - minWordLength; start++) {
+          for (let len = minWordLength; len <= cols - start; len++) {
+            const slice = rowText.slice(start, start + len);
+            if (wordList.includes(slice)) {
+              for (let i = 0; i < len; i++) {
+                grid[r][start + i].classList.add('glow');
+              }
+            }
+          }
+        }
+      }
+    }
+
+    function loop() {
+      refreshGrid();
+      scanForWords();
+    }
+
+    createGrid();
+    loop();
+    setInterval(loop, 500);
   </script>
 </body>
 </html>
