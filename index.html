@@ -1,138 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Gnostic Sigil Pareidolia</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #000;
-      font-family: 'Courier New', monospace;
-      overflow: hidden;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(40, 1fr);
-      grid-template-rows: repeat(25, 1fr);
-      width: 100vw;
-      height: 100vh;
-    }
-    .cell {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: min(3vw, 3vh);
-      color: #f2f2f2;
-      opacity: 0.85;
-      transition: color 0.3s, opacity 0.3s;
-    }
-    .glow {
-      color: teal !important;
-    }
-    .trail {
-      opacity: 0.3 !important;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Waterfall</title>
+<style>
+  body {
+    background: black;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    height: 100vh;
+    color: white;
+    font-family: monospace;
+    white-space: pre;
+  }
+  #grid {
+    line-height: 1;
+    animation: shimmer 2s infinite ease-in-out;
+  }
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.9; }
+    50% { opacity: 1; }
+  }
+  .word-glow {
+    color: teal;
+    text-shadow: 0 0 5px teal, 0 0 10px teal;
+  }
+  .sigil {
+    color: #ff00ff;
+    text-shadow: 0 0 5px #ff00ff;
+  }
+  .trail {
+    color: #ff66ff;
+  }
+</style>
 </head>
 <body>
-  <div class="grid" id="grid"></div>
+<pre id="grid"></pre>
+<script>
+  const rows = 45, cols = 80;
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const sigils = ["◉","∆","⟁","✶","☉"];
+  const wordList = ["SUN", "SEA", "SKY", "GOD", "CAT", "DOG", "RUN", "KEY"];
+  
+  // Initialise grid
+  let grid = Array.from({length: rows}, () =>
+    Array.from({length: cols}, () => randLetter())
+  );
 
-  <script>
-    const rows = 25;
-    const cols = 40;
-    const gridElement = document.getElementById('grid');
-    const grid = [];
-    const wordList = ['SUN', 'HOPE', 'VOID', 'ECHO', 'RAY', 'ARC', 'ORB', 'SIGN', 'CODE', 'PATH'];
-    const sigils = ['◉', '∆', '⟁'];
+  function randLetter() {
+    return letters[Math.floor(Math.random() * letters.length)];
+  }
 
+  // Animation state
+  let currentRow = 0;
+  let sigilPos = 0;
+  let trailLength = 2;
+  let currentSigil = sigils[Math.floor(Math.random()*sigils.length)];
+
+  function drawGrid() {
+    let output = "";
     for (let r = 0; r < rows; r++) {
-      grid[r] = [];
       for (let c = 0; c < cols; c++) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.innerText = randomChar();
-        gridElement.appendChild(cell);
-        grid[r][c] = cell;
-      }
-    }
+        let ch = grid[r][c];
+        let cls = "";
 
-    function randomChar() {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      return chars[Math.floor(Math.random() * chars.length)];
-    }
-
-    function updateRowWithSigil(rowIndex) {
-      const row = grid[rowIndex];
-      const sigil = sigils[Math.floor(Math.random() * sigils.length)];
-      let col = 0;
-
-      function step() {
-        if (col > 0) {
-          const prev = row[col - 1];
-          prev.innerText = randomChar();
-          prev.classList.add('trail');
+        // Sigil
+        if (r === currentRow && c === sigilPos) {
+          ch = currentSigil;
+          cls = "sigil";
         }
-
-        // Remove old trail (10 behind)
-        if (col > 10) {
-          const old = row[col - 11];
-          old.classList.remove('trail');
+        // Trail
+        else if (r === currentRow && c < sigilPos && c >= sigilPos - trailLength) {
+          cls = "trail";
         }
-
-        if (col < cols) {
-          row[col].innerText = sigil;
-          col++;
-          setTimeout(step, 10);
-        } else {
-          // Cleanup: reset all to fresh
-          for (let i = 0; i < cols; i++) {
-            row[i].innerText = randomChar();
-            row[i].classList.remove('trail');
-            row[i].classList.remove('glow');
-          }
-        }
-      }
-
-      step();
-    }
-
-    function scanForWords(rowIndex) {
-      const row = grid[rowIndex];
-      const text = row.map(cell => cell.innerText).join('');
-
-      wordList.forEach(word => {
-        const start = text.indexOf(word);
-        if (start !== -1) {
-          for (let i = 0; i < word.length; i++) {
-            row[start + i].classList.add('glow');
-          }
-          setTimeout(() => {
-            for (let i = 0; i < word.length; i++) {
-              row[start + i].classList.remove('glow');
+        // Glow words
+        else {
+          for (let w of wordList) {
+            let segment = grid[r].slice(c, c + w.length).join("");
+            if (segment === w) {
+              cls = "word-glow";
+              break;
             }
-          }, 1000);
+          }
         }
-      });
+
+        if (cls) {
+          output += `<span class="${cls}">${ch}</span>`;
+        } else {
+          output += ch;
+        }
+      }
+      output += "\n";
+    }
+    document.getElementById("grid").innerHTML = output;
+  }
+
+  function update() {
+    // Update current sigil position
+    grid[currentRow][sigilPos] = randLetter();
+    sigilPos++;
+
+    // Wrap to next row
+    if (sigilPos >= cols) {
+      sigilPos = 0;
+      currentRow = (currentRow + 1) % rows;
+      currentSigil = sigils[Math.floor(Math.random()*sigils.length)];
     }
 
-    function getRandomRows(n) {
-      const indices = [...Array(rows).keys()];
-      return indices.sort(() => 0.5 - Math.random()).slice(0, n);
-    }
+    drawGrid();
+    requestAnimationFrame(update);
+  }
 
-    function loop() {
-      const activeRows = getRandomRows(3);
-      activeRows.forEach((rowIndex, i) => {
-        setTimeout(() => {
-          updateRowWithSigil(rowIndex);
-          setTimeout(() => scanForWords(rowIndex), 700);
-        }, i * 200);
-      });
-    }
-
-    setInterval(loop, 2000);
-  </script>
+  drawGrid();
+  requestAnimationFrame(update);
+</script>
 </body>
 </html>
