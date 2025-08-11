@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Waterfall Smoke Test</title>
+<style>
+  :root { --bg:#0b0b0b; --fg:#e6e6e6; --glow:#00e0d1; }
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:16px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;}
+  #app{position:fixed;inset:0;display:grid;place-items:center;}
+  .grid{display:grid;grid-template-rows:repeat(24, 1fr);grid-auto-flow:row;gap:2px;width:96vw;height:80vh;}
+  .row{display:grid;grid-template-columns:repeat(64, 1fr);gap:2px}
+  .cell{display:flex;align-items:center;justify-content:center;min-width:0;opacity:.95;transition:opacity .15s}
+  .word { text-shadow: 0 0 8px var(--glow); color: var(--glow); font-weight:600; }
+  .sigil { filter: drop-shadow(0 0 6px var(--fg)); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="grid" class="grid" aria-live="polite"></div>
+</div>
+<script>
+(function(){
+  const COLS = 64, ROWS = 24;
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const sigils = ["◉","∆","⟁","✧","◬","◆"];
+  const gridEl = document.getElementById('grid');
+  if(!gridEl){ console.error("No #grid element"); return; }
+
+  // Build DOM once
+  const rows = [];
+  for(let r=0;r<ROWS;r++){
+    const row = document.createElement('div');
+    row.className = 'row';
+    const cells=[];
+    for(let c=0;c<COLS;c++){
+      const span = document.createElement('span');
+      span.className='cell';
+      span.textContent = letters[(Math.random()*letters.length)|0];
+      row.appendChild(span);
+      cells.push(span);
+    }
+    gridEl.appendChild(row);
+    rows.push(cells);
+  }
+
+  // Simple dictionary for demo
+  const words = ["THE","AND","YOU","SIG","ART","SEA","SUN","GOD","ARC","ORB","KEY","EYE","GNOS","SIGIL"];
+  function maybeGlow(rowIdx, head){
+    // Try to form a 3–5 char word ending at head
+    const len = 3 + (Math.random()<0.25?1:0) + (Math.random()<0.1?1:0);
+    if(head-len+1<0) return;
+    const word = words[(Math.random()*words.length)|0];
+    const txt = word.slice(0, Math.min(len, word.length));
+    for(let i=0;i<txt.length;i++){
+      const cell = rows[rowIdx][head - (txt.length-1-i)];
+      if(!cell) return;
+      cell.textContent = txt[i];
+      cell.classList.add('word');
+      setTimeout(()=>cell.classList.remove('word'), 800);
+    }
+  }
+
+  const heads = Array.from({length: ROWS}, ()=> -1);
+  let tick = 0, rafId = 0;
+  function step(){
+    tick++;
+    for(let r=0;r<ROWS;r++){
+      // advance head
+      heads[r] = (heads[r]+1) % COLS;
+      const head = heads[r];
+
+      // mutate letter at head
+      const cell = rows[r][head];
+      if(!cell) continue;
+      if(Math.random()<0.02){ // rare sigil
+        cell.textContent = sigils[(Math.random()*sigils.length)|0];
+        cell.classList.add('sigil');
+        setTimeout(()=>cell.classList.remove('sigil'), 400);
+      } else {
+        cell.textContent = letters[(Math.random()*letters.length)|0];
+      }
+
+      // random glow words
+      if(Math.random()<0.08) maybeGlow(r, head);
+
+      // gently fade random cells to prove visibility
+      if(Math.random()<0.01){ cell.style.opacity = "0.7"; setTimeout(()=>cell.style.opacity="0.95", 200);}
+    }
+    rafId = requestAnimationFrame(step);
+  }
+
+  // Start after next paint to ensure mounted
+  requestAnimationFrame(()=>{ step(); console.log("Waterfall test started"); });
+
+  // Safety: stop if page hidden for a while
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.hidden){ cancelAnimationFrame(rafId); }
+    else{ rafId = requestAnimationFrame(step); }
+  });
+})();
+</script>
+</body>
+</html>
