@@ -33,17 +33,27 @@
     padding: 0 12px;
     background: linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,0));
     backdrop-filter: blur(2px);
-    pointer-events: none; /* clicks pass through */
+    pointer-events: none; /* clicks pass through except on controls we re-enable */
   }
   .brand { opacity: .75; font-weight: 600; }
   .mode {
-    pointer-events: auto; /* allow selection */
+    pointer-events: auto; /* allow interaction */
     font-size: 12px;
     color: var(--muted);
     padding: 4px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.08);
     background: rgba(255,255,255,.03);
     user-select: none;
   }
+  .button {
+    pointer-events: auto;
+    font-size: 12px;
+    color: var(--fg);
+    padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.06);
+    cursor: pointer;
+    margin-left: 8px;
+  }
+  .button:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
   .hint { opacity: .6; font-size: 12px; margin-left: 8px; }
 
   /* App/grid */
@@ -68,10 +78,8 @@
   .word { color: var(--glow); text-shadow: 0 0 8px var(--glow); font-weight: 600; }
   .sigil { filter: drop-shadow(0 0 6px var(--fg)); }
 
-  /* Subtle shimmer so it never feels “dead” even when idle */
-  @keyframes shimmer {
-    0% { opacity: .94; } 50% { opacity: .98; } 100% { opacity: .94; }
-  }
+  /* Subtle shimmer */
+  @keyframes shimmer { 0% { opacity: .94; } 50% { opacity: .98; } 100% { opacity: .94; } }
   #grid { animation: shimmer 6s ease-in-out infinite; }
 
   /* Ritual mode intensifies the vibe slightly */
@@ -81,11 +89,12 @@
 </head>
 <body>
   <!-- Top bar -->
-  <div class="bar">
+  <div class="bar" role="region" aria-label="Controls">
     <div class="brand">Gnostic Sigil Pareidolia</div>
     <div>
-      <span id="mode" class="mode">Mode: Normal</span>
-      <span class="hint">Press <kbd>R</kbd> to toggle Ritual Mode</span>
+      <span id="mode" class="mode" aria-live="polite">Mode: Normal</span>
+      <button id="toggle-ritual" class="button" type="button" aria-pressed="false">Toggle Ritual (R)</button>
+      <span class="hint">Press <kbd>R</kbd> or click</span>
     </div>
   </div>
 
@@ -95,7 +104,7 @@
   </div>
 
 <script>
-/* Waterfall (row-wise) core loop — safe, self-contained, and timing-proof */
+/* Waterfall (row-wise) with button + keyboard ritual toggle */
 (function(){
   // Config
   const COLS = 64, ROWS = 24;
@@ -104,12 +113,12 @@
   const words = ["THE","AND","YOU","SIG","ART","SEA","SUN","GOD","ARC","ORB","KEY","EYE","GNOS","SIGIL"];
 
   // DOM refs (guarded)
-  const appEl  = document.getElementById('app');
   const gridEl = document.getElementById('grid');
   const modeEl = document.getElementById('mode');
+  const toggleBtn = document.getElementById('toggle-ritual');
 
-  if(!appEl || !gridEl){
-    console.error("Mount elements missing (#app/#grid).");
+  if(!gridEl){
+    console.error("Mount element missing (#grid).");
     return;
   }
 
@@ -130,8 +139,30 @@
     rows.push(cells);
   }
 
+  // Ritual state + helpers
+  let ritual = false;
+  function setMode(isRitual){
+    ritual = !!isRitual;
+    document.body.classList.toggle('ritual', ritual);
+    if(modeEl) modeEl.textContent = ritual ? "Mode: Ritual" : "Mode: Normal";
+    if(toggleBtn) toggleBtn.setAttribute('aria-pressed', ritual ? 'true' : 'false');
+  }
+
+  // Click support (mobile-safe)
+  toggleBtn?.addEventListener('click', () => setMode(!ritual));
+
+  // Keyboard support (desktop)
+  function isTypingInField(t){
+    return t && (t.isContentEditable || ['INPUT','TEXTAREA','SELECT'].includes(t.tagName));
+  }
+  document.addEventListener('keydown', (e)=>{
+    if (isTypingInField(e.target)) return;
+    const k = (e.key || '').toLowerCase();
+    if (k === 'r') { e.preventDefault(); setMode(!ritual); }
+  });
+
   // Word glow helper (3–5 chars)
-  function maybeGlow(rowIdx, head, ritual){
+  function maybeGlow(rowIdx, head){
     const len = 3 + (Math.random() < (ritual ? 0.45 : 0.25) ? 1 : 0) + (Math.random() < (ritual ? 0.20 : 0.10) ? 1 : 0);
     if(head - len + 1 < 0) return;
     const word = words[(Math.random()*words.length)|0];
@@ -148,17 +179,6 @@
   // Heads per row
   const heads = Array.from({length: ROWS}, ()=> -1);
   let rafId = 0;
-  let ritual = false;
-
-  // Mode toggle
-  function setMode(isRitual){
-    ritual = !!isRitual;
-    document.body.classList.toggle('ritual', ritual);
-    if(modeEl) modeEl.textContent = ritual ? "Mode: Ritual" : "Mode: Normal";
-  }
-  window.addEventListener('keydown', e=>{
-    if(e.key.toLowerCase() === 'r') setMode(!ritual);
-  });
 
   // Core tick
   function step(){
@@ -181,7 +201,7 @@
 
       // Word formation
       const wordChance = ritual ? 0.12 : 0.08;
-      if(Math.random() < wordChance) maybeGlow(r, head, ritual);
+      if(Math.random() < wordChance) maybeGlow(r, head);
 
       // Micro-motion to prove visibility
       if(Math.random() < (ritual ? 0.015 : 0.01)){
@@ -192,12 +212,8 @@
     rafId = requestAnimationFrame(step);
   }
 
-  // Start after paint so #grid exists and CSS has applied
+  // Start after paint
   requestAnimationFrame(()=>{
-    // Safety: if something was covering the page, at least ensure bg/fg are sane
-    document.body.style.background = getComputedStyle(document.body).backgroundColor || "var(--bg)";
-    document.body.style.color = getComputedStyle(document.body).color || "var(--fg)";
-
     step();
     console.log("Waterfall started");
   });
@@ -207,13 +223,6 @@
     if(document.hidden){ cancelAnimationFrame(rafId); }
     else{ rafId = requestAnimationFrame(step); }
   });
-
-  // Optional: adapt grid size on resize without reflowing DOM (keeps it simple)
-  const ro = new ResizeObserver(()=> {
-    // Let CSS handle sizing; DOM count stays constant for stability/perf.
-    // If you later want dynamic ROWS/COLS, we can do a safe rebuild here.
-  });
-  ro.observe(gridEl);
 })();
 </script>
 </body>
