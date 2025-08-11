@@ -1,62 +1,220 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Waterfall + Ritual Mode</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Gnostic Sigil Pareidolia — Waterfall</title>
+<meta name="color-scheme" content="dark">
 <style>
+  :root {
+    --bg: #0b0b0b;
+    --fg: #e6e6e6;
+    --muted: #9aa0a6;
+    --glow: #00e0d1; /* teal glow for real words */
+  }
+  /* Reset + base */
+  html, body { height: 100%; }
+  * { box-sizing: border-box; }
   body {
-    background: black;
     margin: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    height: 100vh;
-    color: white;
-    font-family: monospace;
-    white-space: pre;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing: 0.02em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow: hidden; /* full-screen canvas vibe */
   }
+
+  /* Header / mode indicator */
+  .bar {
+    position: fixed; inset: 0 0 auto 0; height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 12px;
+    background: linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,0));
+    backdrop-filter: blur(2px);
+    pointer-events: none; /* clicks pass through */
+  }
+  .brand { opacity: .75; font-weight: 600; }
+  .mode {
+    pointer-events: auto; /* allow selection */
+    font-size: 12px;
+    color: var(--muted);
+    padding: 4px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.03);
+    user-select: none;
+  }
+  .hint { opacity: .6; font-size: 12px; margin-left: 8px; }
+
+  /* App/grid */
+  #app { position: fixed; inset: 0; display: grid; place-items: center; }
   #grid {
-    line-height: 1;
-    animation: shimmer 2s infinite ease-in-out;
+    width: 96vw; height: 86vh;
+    display: grid;
+    grid-template-rows: repeat(24, 1fr);
+    gap: 2px;
+    filter: drop-shadow(0 1px 0 rgba(255,255,255,.04));
   }
+  .row { display: grid; grid-template-columns: repeat(64, 1fr); gap: 2px; }
+
+  .cell {
+    display: flex; align-items: center; justify-content: center;
+    min-width: 0;
+    opacity: .95;
+    transition: opacity .15s linear, transform .15s linear;
+    will-change: contents, opacity;
+  }
+
+  .word { color: var(--glow); text-shadow: 0 0 8px var(--glow); font-weight: 600; }
+  .sigil { filter: drop-shadow(0 0 6px var(--fg)); }
+
+  /* Subtle shimmer so it never feels “dead” even when idle */
   @keyframes shimmer {
-    0%, 100% { opacity: 0.9; }
-    50% { opacity: 1; }
+    0% { opacity: .94; } 50% { opacity: .98; } 100% { opacity: .94; }
   }
-  .word-glow {
-    color: teal;
-    text-shadow: 0 0 5px teal, 0 0 10px teal;
-  }
-  .sigil {
-    color: #ff00ff;
-    text-shadow: 0 0 5px #ff00ff;
-  }
-  .trail {
-    color: #ff66ff;
-  }
-  #mode-indicator {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    font-size: 14px;
-    color: grey;
-    opacity: 0.6;
-  }
+  #grid { animation: shimmer 6s ease-in-out infinite; }
+
+  /* Ritual mode intensifies the vibe slightly */
+  .ritual .cell { opacity: .97; }
+  .ritual #grid { animation-duration: 4.5s; }
 </style>
 </head>
 <body>
-<div id="mode-indicator">Mode: Normal (Press 'R' to toggle Ritual Mode)</div>
-<pre id="grid"></pre>
-<script>
-  const rows = 45, cols = 80;
-  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const sigils = ["◉","∆","⟁","✶","☉"];
-  const wordList = ["SUN","SEA","SKY","GOD","CAT","DOG","RUN","KEY"];
-  
-  let grid = Array.from({length: rows}, () =>
-    Array.from({length: cols}, () => randLetter())
-  );
+  <!-- Top bar -->
+  <div class="bar">
+    <div class="brand">Gnostic Sigil Pareidolia</div>
+    <div>
+      <span id="mode" class="mode">Mode: Normal</span>
+      <span class="hint">Press <kbd>R</kbd> to toggle Ritual Mode</span>
+    </div>
+  </div>
 
-  function ra
+  <!-- App mount -->
+  <div id="app" aria-live="polite" aria-busy="false">
+    <div id="grid"></div>
+  </div>
+
+<script>
+/* Waterfall (row-wise) core loop — safe, self-contained, and timing-proof */
+(function(){
+  // Config
+  const COLS = 64, ROWS = 24;
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const sigils = ["◉","∆","⟁","✧","◬","◆"];
+  const words = ["THE","AND","YOU","SIG","ART","SEA","SUN","GOD","ARC","ORB","KEY","EYE","GNOS","SIGIL"];
+
+  // DOM refs (guarded)
+  const appEl  = document.getElementById('app');
+  const gridEl = document.getElementById('grid');
+  const modeEl = document.getElementById('mode');
+
+  if(!appEl || !gridEl){
+    console.error("Mount elements missing (#app/#grid).");
+    return;
+  }
+
+  // Build DOM once
+  const rows = [];
+  for(let r=0;r<ROWS;r++){
+    const row = document.createElement('div');
+    row.className = 'row';
+    const cells = [];
+    for(let c=0;c<COLS;c++){
+      const span = document.createElement('span');
+      span.className = 'cell';
+      span.textContent = letters[(Math.random()*letters.length)|0];
+      row.appendChild(span);
+      cells.push(span);
+    }
+    gridEl.appendChild(row);
+    rows.push(cells);
+  }
+
+  // Word glow helper (3–5 chars)
+  function maybeGlow(rowIdx, head, ritual){
+    const len = 3 + (Math.random() < (ritual ? 0.45 : 0.25) ? 1 : 0) + (Math.random() < (ritual ? 0.20 : 0.10) ? 1 : 0);
+    if(head - len + 1 < 0) return;
+    const word = words[(Math.random()*words.length)|0];
+    const txt = word.slice(0, Math.min(len, word.length));
+    for(let i=0;i<txt.length;i++){
+      const cell = rows[rowIdx][head - (txt.length-1-i)];
+      if(!cell) return;
+      cell.textContent = txt[i];
+      cell.classList.add('word');
+      setTimeout(()=>cell.classList.remove('word'), ritual ? 1100 : 800);
+    }
+  }
+
+  // Heads per row
+  const heads = Array.from({length: ROWS}, ()=> -1);
+  let rafId = 0;
+  let ritual = false;
+
+  // Mode toggle
+  function setMode(isRitual){
+    ritual = !!isRitual;
+    document.body.classList.toggle('ritual', ritual);
+    if(modeEl) modeEl.textContent = ritual ? "Mode: Ritual" : "Mode: Normal";
+  }
+  window.addEventListener('keydown', e=>{
+    if(e.key.toLowerCase() === 'r') setMode(!ritual);
+  });
+
+  // Core tick
+  function step(){
+    for(let r=0;r<ROWS;r++){
+      heads[r] = (heads[r]+1) % COLS;
+      const head = heads[r];
+
+      const cell = rows[r][head];
+      if(!cell) continue;
+
+      // Rare sigils
+      const sigilChance = ritual ? 0.035 : 0.02;
+      if(Math.random() < sigilChance){
+        cell.textContent = sigils[(Math.random()*sigils.length)|0];
+        cell.classList.add('sigil');
+        setTimeout(()=>cell.classList.remove('sigil'), ritual ? 520 : 400);
+      } else {
+        cell.textContent = letters[(Math.random()*letters.length)|0];
+      }
+
+      // Word formation
+      const wordChance = ritual ? 0.12 : 0.08;
+      if(Math.random() < wordChance) maybeGlow(r, head, ritual);
+
+      // Micro-motion to prove visibility
+      if(Math.random() < (ritual ? 0.015 : 0.01)){
+        cell.style.opacity = "0.7";
+        setTimeout(()=>{ cell.style.opacity="0.95"; }, 200);
+      }
+    }
+    rafId = requestAnimationFrame(step);
+  }
+
+  // Start after paint so #grid exists and CSS has applied
+  requestAnimationFrame(()=>{
+    // Safety: if something was covering the page, at least ensure bg/fg are sane
+    document.body.style.background = getComputedStyle(document.body).backgroundColor || "var(--bg)";
+    document.body.style.color = getComputedStyle(document.body).color || "var(--fg)";
+
+    step();
+    console.log("Waterfall started");
+  });
+
+  // Pause when hidden to save cycles
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.hidden){ cancelAnimationFrame(rafId); }
+    else{ rafId = requestAnimationFrame(step); }
+  });
+
+  // Optional: adapt grid size on resize without reflowing DOM (keeps it simple)
+  const ro = new ResizeObserver(()=> {
+    // Let CSS handle sizing; DOM count stays constant for stability/perf.
+    // If you later want dynamic ROWS/COLS, we can do a safe rebuild here.
+  });
+  ro.observe(gridEl);
+})();
+</script>
+</body>
+</html>
