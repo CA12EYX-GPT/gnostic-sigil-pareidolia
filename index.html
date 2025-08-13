@@ -89,6 +89,33 @@
     font-weight: 700;
     transform: translateZ(0);
   }
+
+  :root {
+  --bg: #0b0b0b;
+  --fg: #e6e6e6;
+  --muted: #9aa0a6;
+  --glow: #00e0d1;      /* teal for words & static sigils */
+  --leader: #ff4343;    /* red for moving leader sigils */
+}
+
+/* formed words (already teal) */
+.word { color: var(--glow); text-shadow: 0 0 10px var(--glow); font-weight: 600; }
+
+/* moving “head” sigils = RED */
+.leader {
+  color: var(--leader);
+  text-shadow: 0 0 10px var(--leader), 0 0 18px rgba(255,67,67,.45);
+  font-weight: 700;
+  transform: translateZ(0);
+}
+
+/* rare, background/static sigils = TEAL */
+.sigil-static {
+  color: var(--glow);
+  text-shadow: 0 0 8px var(--glow);
+  font-weight: 600;
+}
+
 </style>
 </head>
 <body>
@@ -169,23 +196,40 @@
       if (!cell) return;
       cell.textContent = word[i];
       cell.classList.add('word');
-      setTimeout(()=>cell.classList.remove('word'), ritual ? 1100 : 800);
+      setTimeout(()=>cell.classList.remove('word'), ritual ? 2200 : 1600);
     }
   }
 
   // Change a cell (letter noise + micro flicker + occasional word)
-  function changeCell(r, c, allowGlow=true){
-    const cell = rows[r]?.[c];
-    if(!cell) return;
-    cell.classList.remove('leader');
+function changeCell(r, c, allowGlow = true){
+  const cell = rows[r]?.[c];
+  if(!cell) return;
+
+  // clear any previous roles
+  cell.classList.remove('leader', 'sigil-static', 'word');
+
+  // Occasionally drop a STATIC (teal) sigil instead of a letter
+  const staticSigilChance = ritual ? 0.03 : 0.015; // tune to taste
+  if (Math.random() < staticSigilChance){
+    const sig = leaderSigils[(Math.random()*leaderSigils.length)|0];
+    cell.textContent = sig;
+    cell.classList.add('sigil-static');
+    // static sigils do not trigger word glows
+  } else {
+    // normal letter change
     cell.textContent = letters[(Math.random()*letters.length)|0];
+
+    // micro flicker to show activity
     if (Math.random() < (ritual ? 0.04 : 0.025)){
       cell.style.opacity = "0.7";
       setTimeout(()=>{ cell.style.opacity = "0.95"; }, 160);
     }
+
+    // maybe form a word (teal)
     const wordChance = ritual ? 0.14 : 0.10;
     if (allowGlow && Math.random() < wordChance) maybeGlow(r, c);
   }
+}
 
   // Leader helpers
   const leaderChars = Array.from({length: ROWS}, (_,r)=> leaderSigils[r % leaderSigils.length]);
