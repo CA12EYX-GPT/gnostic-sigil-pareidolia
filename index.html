@@ -85,6 +85,13 @@
   /* Ritual mode intensifies the vibe slightly */
   .ritual .cell { opacity: .97; }
   .ritual #grid { animation-duration: 4.5s; }
+
+  /* Leader sigil that heads each row */
+.leader {
+  filter: drop-shadow(0 0 10px rgba(255,255,255,.55));
+  font-weight: 700;
+  transform: translateZ(0);
+}
 </style>
 </head>
 <body>
@@ -104,12 +111,12 @@
   </div>
 
 <script>
-/* Waterfall (row-wise) with button + keyboard ritual toggle */
+/* Waterfall (row-wise) with a persistent leader sigil per row */
 (function(){
   // Config
   const COLS = 64, ROWS = 24;
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const sigils = ["◉","∆","⟁","✧","◬","◆"];
+  const leaderSigils = ["◉","∆","⟁","✧","◬","◆"];
   const words = ["THE","AND","YOU","SIG","ART","SEA","SUN","GOD","ARC","ORB","KEY","EYE","GNOS","SIGIL"];
 
   // DOM refs (guarded)
@@ -161,7 +168,7 @@
     if (k === 'r') { e.preventDefault(); setMode(!ritual); }
   });
 
-  // Word glow helper (3–5 chars)
+  // Word glow helper (3–5 chars) — triggered *behind* the leader
   function maybeGlow(rowIdx, head){
     const len = 3 + (Math.random() < (ritual ? 0.45 : 0.25) ? 1 : 0) + (Math.random() < (ritual ? 0.20 : 0.10) ? 1 : 0);
     if(head - len + 1 < 0) return;
@@ -176,38 +183,49 @@
     }
   }
 
-  // Heads per row
-  const heads = Array.from({length: ROWS}, ()=> -1);
+  // Per-row leader state
+  const heads = Array.from({length: ROWS}, ()=> 0);
+  const leaderChars = Array.from({length: ROWS}, (_,r)=> leaderSigils[r % leaderSigils.length]);
+
+  // Initialize leaders at col 0
+  for(let r=0;r<ROWS;r++){
+    const c0 = rows[r][0];
+    c0.textContent = leaderChars[r];
+    c0.classList.add('leader');
+  }
+
   let rafId = 0;
 
-  // Core tick
+  // Core tick: the leader moves one step; the cell it leaves behind becomes a new character (and may spark a word)
   function step(){
     for(let r=0;r<ROWS;r++){
-      heads[r] = (heads[r]+1) % COLS;
-      const head = heads[r];
+      const prev = heads[r];
+      const next = (prev + 1) % COLS;
 
-      const cell = rows[r][head];
-      if(!cell) continue;
-
-      // Rare sigils
-      const sigilChance = ritual ? 0.035 : 0.02;
-      if(Math.random() < sigilChance){
-        cell.textContent = sigils[(Math.random()*sigils.length)|0];
-        cell.classList.add('sigil');
-        setTimeout(()=>cell.classList.remove('sigil'), ritual ? 520 : 400);
-      } else {
-        cell.textContent = letters[(Math.random()*letters.length)|0];
+      // 1) Clear previous leader -> becomes changing letter (the "waterfall" change)
+      const prevCell = rows[r][prev];
+      if(prevCell){
+        prevCell.classList.remove('leader');
+        // Subtle flicker to show change happened
+        if(Math.random() < (ritual ? 0.04 : 0.025)){
+          prevCell.style.opacity = "0.7";
+          setTimeout(()=>{ prevCell.style.opacity = "0.95"; }, 160);
+        }
+        // The leaving leader *causes* the change behind it
+        prevCell.textContent = letters[(Math.random()*letters.length)|0];
+        // Occasional word formation behind the leader
+        const wordChance = ritual ? 0.14 : 0.1;
+        if(Math.random() < wordChance) maybeGlow(r, prev);
       }
 
-      // Word formation
-      const wordChance = ritual ? 0.12 : 0.08;
-      if(Math.random() < wordChance) maybeGlow(r, head);
-
-      // Micro-motion to prove visibility
-      if(Math.random() < (ritual ? 0.015 : 0.01)){
-        cell.style.opacity = "0.7";
-        setTimeout(()=>{ cell.style.opacity="0.95"; }, 200);
+      // 2) Set the leader at the new head
+      const headCell = rows[r][next];
+      if(headCell){
+        headCell.textContent = leaderChars[r];
+        headCell.classList.add('leader');
       }
+
+      heads[r] = next;
     }
     rafId = requestAnimationFrame(step);
   }
@@ -215,7 +233,7 @@
   // Start after paint
   requestAnimationFrame(()=>{
     step();
-    console.log("Waterfall started");
+    console.log("Waterfall with leader sigil started");
   });
 
   // Pause when hidden to save cycles
@@ -225,5 +243,6 @@
   });
 })();
 </script>
+
 </body>
 </html>
