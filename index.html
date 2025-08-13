@@ -10,135 +10,153 @@
     --bg: #0b0b0b;
     --fg: #e6e6e6;
     --muted: #9aa0a6;
-    --glow: #00e0d1;   /* teal for words & static sigils */
-    --leader: #ff4343; /* red for moving leader sigils */
+    --glow: #00e0d1;      /* teal for words & static sigils */
+    --leader: #ff4343;    /* red for moving leader sigils */
   }
-
-  /* Reset + base */
   html, body { height: 100%; }
   * { box-sizing: border-box; }
   body {
     margin: 0;
     background: var(--bg);
     color: var(--fg);
-    font: 15px/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; /* slightly tighter */
+    font: 16px/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     letter-spacing: 0.02em;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-    overflow: hidden; /* full-screen canvas vibe */
+    overflow: hidden;
   }
-
-  /* Header / mode indicator */
   .bar {
     position: fixed; inset: 0 0 auto 0; height: 44px;
     display: flex; align-items: center; justify-content: space-between;
     padding: 0 12px;
     background: linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,0));
     backdrop-filter: blur(2px);
-    pointer-events: none; z-index: 2;
+    pointer-events: none;
   }
   .brand { opacity: .75; font-weight: 600; }
   .mode {
     pointer-events: auto;
-    font-size: 12px; color: var(--muted);
+    font-size: 12px;
+    color: var(--muted);
     padding: 4px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.08);
     background: rgba(255,255,255,.03);
     user-select: none;
   }
   .button {
     pointer-events: auto;
-    font-size: 12px; color: var(--fg);
+    font-size: 12px;
+    color: var(--fg);
     padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12);
     background: rgba(255,255,255,.06);
-    cursor: pointer; margin-left: 8px;
+    cursor: pointer;
+    margin-left: 8px;
   }
   .button:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
   .hint { opacity: .6; font-size: 12px; margin-left: 8px; }
-
-  /* App/grid */
   #app { position: fixed; inset: 0; display: grid; place-items: center; }
   #grid {
-    width: 92vw; height: 82vh;          /* tighter overall size */
+    width: 92vw; height: 82vh;
     display: grid;
     grid-template-rows: repeat(24, 1fr);
-    gap: 1px;                           /* tighter gaps */
+    gap: 1px;
     filter: drop-shadow(0 1px 0 rgba(255,255,255,.04));
   }
   .row { display: grid; grid-template-columns: repeat(64, 1fr); gap: 1px; }
-
   .cell {
     display: flex; align-items: center; justify-content: center;
-    min-width: 0; opacity: .95;
+    min-width: 0;
+    opacity: .95;
     transition: opacity .15s linear, transform .15s linear;
     will-change: contents, opacity;
   }
-
-  /* formed words: TEAL + longer glow handled in JS timeout */
   .word { color: var(--glow); text-shadow: 0 0 10px var(--glow); font-weight: 600; }
-
-  /* moving heads: RED */
   .leader {
     color: var(--leader);
     text-shadow: 0 0 10px var(--leader), 0 0 18px rgba(255,67,67,.45);
     font-weight: 700;
     transform: translateZ(0);
   }
-
-  /* rare static/background sigils: TEAL */
   .sigil-static {
     color: var(--glow);
     text-shadow: 0 0 8px var(--glow);
     font-weight: 600;
   }
-
-  /* Subtle shimmer */
   @keyframes shimmer { 0% { opacity: .94; } 50% { opacity: .98; } 100% { opacity: .94; } }
   #grid { animation: shimmer 6s ease-in-out infinite; }
-
-  /* Ritual mode intensifies the vibe slightly */
   .ritual .cell { opacity: .97; }
   .ritual #grid { animation-duration: 4.5s; }
 </style>
 </head>
 <body>
-  <!-- Top bar -->
-  <div class="bar" role="region" aria-label="Controls">
-    <div class="brand">Gnostic Sigil Pareidolia</div>
-    <div>
-      <span id="mode" class="mode" aria-live="polite">Mode: Normal</span>
-      <button id="toggle-ritual" class="button" type="button" aria-pressed="false">Toggle Ritual (R)</button>
-      <span class="hint">R: Ritual · N: Next · [: Slower · ]: Faster</span>
-    </div>
+<div class="bar" role="region" aria-label="Controls">
+  <div class="brand">Gnostic Sigil Pareidolia</div>
+  <div>
+    <span id="mode" class="mode" aria-live="polite">Mode: Normal</span>
+    <button id="toggle-ritual" class="button" type="button" aria-pressed="false">Toggle Ritual (R)</button>
+    <span class="hint">Press <kbd>R</kbd> or click</span>
   </div>
-
-  <!-- App mount -->
-  <div id="app" aria-live="polite" aria-busy="false">
-    <div id="grid"></div>
-  </div>
+</div>
+<div id="app" aria-live="polite" aria-busy="false">
+  <div id="grid"></div>
+</div>
 
 <script>
-/* Waterfall with extended patterns + visible leader heads in every mode (tight grid + color rules) */
 (function(){
-  // Config
-  var COLS = 64, ROWS = 24;
-  var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  var leaderSigils = ["◉","∆","⟁","✧","◬","◆"];
-  var words = ["THE","AND","YOU","SIG","ART","SEA","SUN","GOD","ARC","ORB","KEY","EYE","GNOS","SIGIL"];
+  const COLS = 64, ROWS = 24;
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const leaderSigils = ["◉","∆","⟁","✧","◬","◆"];
 
-  // DOM refs
-  var gridEl = document.getElementById('grid');
-  var modeEl = document.getElementById('mode');
-  var toggleBtn = document.getElementById('toggle-ritual');
-  if(!gridEl){ return; }
+  const PACKS = {
+    gnostic: ["AEON","PNEU","LOGOS","NOUS","SOPHIA","PLEROMA","ARCHON","DAEMON","ABRAX","OGDOAD","SETH","YALT","BARB","HYMN","RITE","MYTH","SIGIL","OROB","EIDOL","GNOSIS","APOPH"],
+    spiritual: ["AURA","OMEN","GRACE","ANGEL","LOTUS","PRANA","MANA","NAMAS","ALIGN","LIGHT","GUIDE","HEART","SOUL","INNER","CHANT","BREATHE","FAITH","HOPE","PEACE","BLESS"],
+    positive: ["KIND","BRAVE","TRUE","LUCK","SMILE","SHINE","JOY","CALM","EASE","GOOD","RISE","GLOW","LOVE","HEAL","TRUST","CLEAR","AIM","FLOW","BEST","WIN"],
+    neutral: ["THE","AND","YOU","SUN","SEA","ARC","ORB","KEY","EYE","ART","STAR","PATH","SIGN","SONG"]
+  };
 
-  // Build grid once
-  var rows = [];
-  for (var r=0; r<ROWS; r++){
-    var row = document.createElement('div');
+  const PACKS_BY_LEN = {};
+  for (const [pack, list] of Object.entries(PACKS)) {
+    for (const w of list) {
+      const L = w.length;
+      (PACKS_BY_LEN[pack] ??= {})[L] ??= [];
+      PACKS_BY_LEN[pack][L].push(w);
+    }
+  }
+
+  function pickPack() {
+    const weights = ritual
+      ? [["gnostic", 0.55], ["spiritual", 0.25], ["positive", 0.15], ["neutral", 0.05]]
+      : [["gnostic", 0.25], ["spiritual", 0.30], ["positive", 0.30], ["neutral", 0.15]];
+    const r = Math.random();
+    let acc = 0;
+    for (const [name, w] of weights) { acc += w; if (r < acc) return name; }
+    return "neutral";
+  }
+
+  function pickWordByLength(desiredLen) {
+    const pack = pickPack();
+    const table = PACKS_BY_LEN[pack];
+    if (!table) return null;
+    const lens = [desiredLen, desiredLen-1, desiredLen+1, desiredLen-2, desiredLen+2];
+    for (const L of lens) {
+      const arr = table[L];
+      if (arr && arr.length) return arr[(Math.random()*arr.length)|0];
+    }
+    const flat = Object.values(table).flat();
+    return flat.length ? flat[(Math.random()*flat.length)|0] : null;
+  }
+
+  const gridEl = document.getElementById('grid');
+  const modeEl = document.getElementById('mode');
+  const toggleBtn = document.getElementById('toggle-ritual');
+  if(!gridEl) return;
+
+  const rows = [];
+  for(let r=0;r<ROWS;r++){
+    const row = document.createElement('div');
     row.className = 'row';
-    var cells = [];
-    for (var c=0; c<COLS; c++){
-      var span = document.createElement('span');
+    const cells = [];
+    for(let c=0;c<COLS;c++){
+      const span = document.createElement('span');
       span.className = 'cell';
       span.textContent = letters[(Math.random()*letters.length)|0];
       row.appendChild(span);
@@ -148,392 +166,153 @@
     rows.push(cells);
   }
 
-  // Ritual toggle
-  var ritual = false;
+  let ritual = false;
   function setMode(isRitual){
     ritual = !!isRitual;
-    if (document.body && document.body.classList) {
-      if (ritual) document.body.classList.add('ritual');
-      else document.body.classList.remove('ritual');
-    }
-    if (modeEl) modeEl.textContent = ritual ? "Mode: Ritual" : "Mode: Normal";
-    if (toggleBtn) toggleBtn.setAttribute('aria-pressed', ritual ? 'true' : 'false');
+    document.body.classList.toggle('ritual', ritual);
+    modeEl.textContent = ritual ? "Mode: Ritual" : "Mode: Normal";
+    toggleBtn.setAttribute('aria-pressed', ritual ? 'true' : 'false');
   }
-  if (toggleBtn) toggleBtn.addEventListener('click', function(){ setMode(!ritual); });
-  function isTypingInField(t){ return t && (t.isContentEditable || ['INPUT','TEXTAREA','SELECT'].indexOf(t.tagName)>=0); }
-  document.addEventListener('keydown', function(e){
-    if (isTypingInField(e.target)) return;
-    var k = (e.key || '').toLowerCase();
-    if (k==='r'){ e.preventDefault(); setMode(!ritual); }
-    if (k==='n'){ e.preventDefault(); nextPhase(); }
-    if (k===']'){ e.preventDefault(); speed = Math.min(8, speed+1); }
-    if (k==='['){ e.preventDefault(); speed = Math.max(1, speed-1); }
-  });
+  toggleBtn?.addEventListener('click', () => setMode(!ritual));
+  function isTypingInField(t){ return t && (t.isContentEditable || ['INPUT','TEXTAREA','SELECT'].includes(t.tagName)); }
+  document.addEventListener('keydown', (e)=>{ if(isTypingInField(e.target)) return; if((e.key||'').toLowerCase()==='r'){ e.preventDefault(); setMode(!ritual); }});
 
-  // Word glow helper (3–5 chars), seeded from a "head" (r,c) — with 2× duration
-  function maybeGlow(rr, cc){
-    var len = 3 + (Math.random() < (ritual ? 0.45 : 0.25) ? 1 : 0) + (Math.random() < (ritual ? 0.20 : 0.10) ? 1 : 0);
-    var start = cc - (len - 1);
+  function maybeGlow(r, c){
+    let len = 3;
+    if (Math.random() < (ritual ? 0.45 : 0.25)) len++;
+    if (Math.random() < (ritual ? 0.20 : 0.10)) len++;
+    const start = c - (len - 1);
     if (start < 0) return;
-    var pick = words[(Math.random()*words.length)|0];
-    var txt = pick.slice(0, Math.min(len, pick.length));
-    for (var i=0; i<txt.length; i++){
-      var cell = (rows[rr] && rows[rr][start + i]) ? rows[rr][start + i] : null;
-      if (!cell) return;
+    const word = pickWordByLength(len);
+    if (!word) return;
+    const txt = word.slice(-len);
+    for (let i=0;i<txt.length;i++){
+      const cell = rows[r]?.[start + i];
+      if(!cell) return;
       cell.textContent = txt[i];
+      cell.classList.remove('leader','sigil-static');
       cell.classList.add('word');
-      (function(cellRef){
-        setTimeout(function(){ cellRef.classList.remove('word'); }, ritual ? 2200 : 1600);
-      })(cell);
+      setTimeout(()=>cell.classList.remove('word'), ritual ? 2200 : 1600);
     }
   }
 
-  // Change a cell (letter noise or static sigil + micro flicker + occasional word)
-  function changeCell(rr, cc, allowGlow){
-    if (allowGlow === undefined) allowGlow = true;
-    var cell = rows[rr] ? rows[rr][cc] : null;
+  function changeCell(r, c, allowGlow = true){
+    const cell = rows[r]?.[c];
     if(!cell) return;
-
-    // clear any previous roles
-    cell.classList.remove('leader','sigil-static','word');
-
-    // Rare STATIC teal sigil (atmospheric)
-    var staticSigilChance = ritual ? 0.03 : 0.015;
+    cell.classList.remove('leader', 'sigil-static', 'word');
+    const staticSigilChance = ritual ? 0.03 : 0.015;
     if (Math.random() < staticSigilChance){
-      var sig = leaderSigils[(Math.random()*leaderSigils.length)|0];
+      const sig = leaderSigils[(Math.random()*leaderSigils.length)|0];
       cell.textContent = sig;
       cell.classList.add('sigil-static');
-      return;
+    } else {
+      cell.textContent = letters[(Math.random()*letters.length)|0];
+      if (Math.random() < (ritual ? 0.04 : 0.025)){
+        cell.style.opacity = "0.7";
+        setTimeout(()=>{ cell.style.opacity = "0.95"; }, 160);
+      }
+      const wordChance = ritual ? 0.14 : 0.10;
+      if (allowGlow && Math.random() < wordChance) maybeGlow(r, c);
     }
-
-    // normal letter change
-    cell.textContent = letters[(Math.random()*letters.length)|0];
-
-    // micro flicker to show activity
-    if (Math.random() < (ritual ? 0.04 : 0.025)){
-      cell.style.opacity = "0.7";
-      setTimeout(function(){ cell.style.opacity = "0.95"; }, 160);
-    }
-
-    // maybe form a word (teal)
-    var wordChance = ritual ? 0.14 : 0.10;
-    if (allowGlow && Math.random() < wordChance) maybeGlow(rr, cc);
   }
 
-  // Leader helpers
-  var leaderChars = [];
-  for (var lr=0; lr<ROWS; lr++) leaderChars.push(leaderSigils[lr % leaderSigils.length]);
-
-  function setLeader(rr, cc){
-    var cell = rows[rr] ? rows[rr][cc] : null;
-    if (!cell) return;
-    cell.textContent = leaderChars[rr];
+  const leaderChars = Array.from({length: ROWS}, (_,r)=> leaderSigils[r % leaderSigils.length]);
+  function setLeader(r, c){
+    const cell = rows[r]?.[c];
+    if(!cell) return;
+    cell.textContent = leaderChars[r];
     cell.classList.add('leader');
   }
   function clearAllLeaders(){
-    for(var r2=0;r2<ROWS;r2++){
-      for(var c2=0;c2<COLS;c2++){
-        var cell = rows[r2][c2];
-        if (cell) cell.classList.remove('leader');
-      }
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) rows[r][c].classList.remove('leader');
+  }
+
+  const cx = (COLS-1)/2, cy = (ROWS-1)/2;
+  const circleBuckets = new Map(); let maxCircle = 0;
+  const squareBuckets = new Map(); let maxSquare = 0;
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const rrC = Math.round(Math.hypot(c - cx, r - cy));
+      maxCircle = Math.max(maxCircle, rrC);
+      (circleBuckets.get(rrC) || circleBuckets.set(rrC,[]).get(rrC)).push([r,c]);
+      const rrS = Math.max(Math.abs(c - cx), Math.abs(r - cy));
+      maxSquare = Math.max(maxSquare, rrS);
+      (squareBuckets.get(rrS) || squareBuckets.set(rrS,[]).get(rrS)).push([r,c]);
     }
   }
 
-  // Geometry precompute
-  var cx = (COLS-1)/2, cy = (ROWS-1)/2;
-
-  // Circle (Euclidean) rings
-  var circleBuckets = new Map(); var maxCircle = 0;
-  for(var rA=0;rA<ROWS;rA++) for(var cA=0;cA<COLS;cA++){
-    var rrA = Math.sqrt((cA - cx)*(cA - cx) + (rA - cy)*(rA - cy));
-    var kA = Math.round(rrA);
-    if (kA > maxCircle) maxCircle = kA;
-    var listA = circleBuckets.get(kA) || [];
-    listA.push([rA,cA]); circleBuckets.set(kA, listA);
-  }
-
-  // Square (Chebyshev) rings
-  var squareBuckets = new Map(); var maxSquare = 0;
-  for(var rB=0;rB<ROWS;rB++) for(var cB=0;cB<COLS;cB++){
-    var rrB = Math.max(Math.abs(cB - cx), Math.abs(rB - cy));
-    if (rrB > maxSquare) maxSquare = rrB;
-    var listB = squareBuckets.get(rrB) || [];
-    listB.push([rB,cB]); squareBuckets.set(rrB, listB);
-  }
-
-  // Diamond (Manhattan) rings
-  var diamondBuckets = new Map(); var maxDiamond = 0;
-  for(var rC=0;rC<ROWS;rC++) for(var cC=0;cC<COLS;cC++){
-    var rrC = Math.abs(cC - cx) + Math.abs(rC - cy);
-    if (rrC > maxDiamond) maxDiamond = rrC;
-    var listC = diamondBuckets.get(rrC) || [];
-    listC.push([rC,cC]); diamondBuckets.set(rrC, listC);
-  }
-
-  // Diagonals (NW→SE anti-diagonals): group by (c - r)
-  var diagOffsetMin = -(ROWS-1), diagOffsetMax = (COLS-1);
-  var diagBuckets = []; // index = d - diagOffsetMin
-  for(var d=diagOffsetMin; d<=diagOffsetMax; d++){
-    var arr = [];
-    for(var rD=0;rD<ROWS;rD++){
-      var cD = rD + d;
-      if(cD>=0 && cD<COLS) arr.push([rD,cD]);
-    }
-    diagBuckets.push(arr);
-  }
-  var diagCount = diagBuckets.length;
-
-  // Spiral (square) order from center outward (clockwise)
-  var spiralOrder = (function(){
-    var order = [];
-    order.push([Math.round(cy), Math.round(cx)]); // center first
-    for(var rad=1; rad<=maxSquare; rad++){
-      var top = Math.round(cy - rad), bottom = Math.round(cy + rad);
-      var left = Math.round(cx - rad), right = Math.round(cx + rad);
-      for(var c1=left; c1<=right; c1++) if (top>=0 && top<ROWS && c1>=0 && c1<COLS) order.push([top, c1]);
-      for(var r1=top+1; r1<=bottom; r1++) if (r1>=0 && r1<ROWS && right>=0 && right<COLS) order.push([r1, right]);
-      for(var c2=right-1; c2>=left; c2--) if (bottom>=0 && bottom<ROWS && c2>=0 && c2<COLS) order.push([bottom, c2]);
-      for(var r2=bottom-1; r2>top; r2--) if (r2>=0 && r2<ROWS && left>=0 && left<COLS) order.push([r2, left]);
-    }
-    return order;
-  })();
-  var spiralLen = spiralOrder.length;
-
-  // Serpentine (zig-zag) path
-  var serpentine = [];
-  for(var rE=0; rE<ROWS; rE++){
-    if (rE % 2 === 0){ for(var cE=0;cE<COLS;cE++) serpentine.push([rE,cE]); }
-    else { for(var cF=COLS-1;cF>=0;cF--) serpentine.push([rE,cF]); }
-  }
-  var serpLen = serpentine.length;
-
-  // Pattern sequencer
-  var PATTERNS = [
-    "line","radial","multilines","square","line",
-    "diamond","splitHoriz","verticalSplit","diagonals",
-    "checkerRipple","spiralSquare","zigzag","starburst","line"
-  ];
-  var phaseIndex = 0;
-  var tickInPhase = 0;
-
-  // Per-phase state
-  var lineHeads = new Array(ROWS); for (var li=0; li<ROWS; li++) lineHeads[li]=0;
-  var multilinesStarts = []; // per row: array of start cols
-  var checkerParity = 0;     // flips each tick in checkerRipple
-  var spiralPtr = 0;
-  var zigHeads = [];         // indices into serpentine for multiple serpents
-  var starDirs = [];         // chosen ray directions for starburst
-
-  // Controls
-  var speed = 1;             // ]/[ to adjust
-  var holdTicks = 10;        // brief pause between phases
-  var holding = 0;
+  const PATTERNS = ["line","radial","multilines","square","zigzag","line"];
+  let phaseIndex = 0, tickInPhase = 0;
+  let lineHeads = Array.from({length: ROWS}, ()=> 0);
+  let multilinesStarts = [];
 
   function initPhase(name){
     clearAllLeaders();
-    tickInPhase = 0; holding = 0;
-    if (name === "line"){
-      for (var iL=0;iL<ROWS;iL++){ lineHeads[iL]=0; setLeader(iL, 0); }
-    } else if (name === "multilines"){
-      multilinesStarts = [];
-      for (var rG=0; rG<ROWS; rG++){
-        var count = 2 + ((Math.random()*3)|0); // 2–4 per row
-        var picks = {};
-        var arr = [];
-        while(arr.length < count){
-          var v = (Math.random()*COLS)|0;
-          if(!picks[v]){ picks[v]=true; arr.push(v); }
-        }
-        multilinesStarts.push(arr);
-      }
-    } else if (name === "checkerRipple"){
-      checkerParity = 0;
-    } else if (name === "spiralSquare"){
-      spiralPtr = 0;
-    } else if (name === "zigzag"){
-      // 3 serpents staggered along the serpentine path
-      var gap = Math.floor(serpLen / 3);
-      zigHeads = [0, gap, gap*2];
-    } else if (name === "starburst"){
-      // choose 6–8 directions (unit steps on grid)
-      var dirs = [
-        [ 1, 0],[ -1, 0],[ 0, 1],[ 0,-1],
-        [ 1, 1],[ 1,-1],[-1, 1],[-1,-1]
-      ];
-      starDirs = [];
-      var pool = dirs.slice();
-      var countR = 6 + ((Math.random()*3)|0); // 6–8 rays
-      for(var i=0;i<countR && pool.length;i++){
-        var idx = (Math.random()*pool.length)|0;
-        starDirs.push(pool.splice(idx,1)[0]);
-      }
+    tickInPhase = 0;
+    if(name === "line"){
+      lineHeads = Array.from({length: ROWS}, ()=> 0);
+      for(let r=0;r<ROWS;r++) setLeader(r, 0);
+    } else if(name === "multilines"){
+      multilinesStarts = Array.from({length: ROWS}, ()=>{
+        const count = 2 + ((Math.random()*3)|0);
+        const picks = new Set();
+        while(picks.size < count) picks.add((Math.random()*COLS)|0);
+        return Array.from(picks);
+      });
     }
   }
 
   function phaseDuration(name){
     switch(name){
-      case "line":           return COLS;
-      case "radial":         return maxCircle + 1;
-      case "square":         return maxSquare + 1;
-      case "diamond":        return maxDiamond + 1;
-      case "multilines":     return COLS;
-      case "splitHoriz":     return Math.max(Math.ceil(cx), Math.ceil((COLS-1)-cx)) + 1;
-      case "verticalSplit":  return Math.max(Math.ceil(cy), Math.ceil((ROWS-1)-cy)) + 1;
-      case "diagonals":      return diagCount;
-      case "checkerRipple":  return maxCircle + 1;
-      case "spiralSquare":   return Math.ceil(spiralLen / 64); // chunked for pace
-      case "zigzag":         return serpLen;
-      case "starburst":      return Math.max(maxSquare, maxCircle) + 1;
-      default:               return COLS;
+      case "line": return COLS;
+      case "radial": return maxCircle + 1;
+      case "square": return maxSquare + 1;
+      case "multilines": return COLS;
+      case "zigzag": return COLS * 2;
+      default: return COLS;
     }
   }
 
   function stepPhase(name){
-    // ensure only current heads are visible each tick
-    clearAllLeaders();
-
-    if (name === "line"){
-      for(var rH=0;rH<ROWS;rH++){
-        var prev = lineHeads[rH];
-        var next = (prev + 1) % COLS;
-        changeCell(rH, prev, true);
-        setLeader(rH, next);
-        lineHeads[rH] = next;
+    if(name === "line"){
+      for(let r=0;r<ROWS;r++){
+        const prev = lineHeads[r], next = (prev + 1) % COLS;
+        changeCell(r, prev, true);
+        setLeader(r, next);
+        lineHeads[r] = next;
       }
-
-    } else if (name === "radial"){
-      var ring1 = circleBuckets.get(tickInPhase);
-      if (ring1){
-        for (var i1=0;i1<ring1.length;i1++){ changeCell(ring1[i1][0], ring1[i1][1], true); }
-        for (var j1=0;j1<ring1.length;j1++){ setLeader(ring1[j1][0], ring1[j1][1]); }
-      }
-
-    } else if (name === "square"){
-      var ring2 = squareBuckets.get(tickInPhase);
-      if (ring2){
-        for (var i2=0;i2<ring2.length;i2++){ changeCell(ring2[i2][0], ring2[i2][1], true); }
-        for (var j2=0;j2<ring2.length;j2++){ setLeader(ring2[j2][0], ring2[j2][1]); }
-      }
-
-    } else if (name === "diamond"){
-      var ring3 = diamondBuckets.get(tickInPhase);
-      if (ring3){
-        for (var i3=0;i3<ring3.length;i3++){ changeCell(ring3[i3][0], ring3[i3][1], true); }
-        for (var j3=0;j3<ring3.length;j3++){ setLeader(ring3[j3][0], ring3[j3][1]); }
-      }
-
-    } else if (name === "multilines"){
-      for (var rI=0;rI<ROWS;rI++){
-        var starts = multilinesStarts[rI];
-        for (var s=0; s<starts.length; s++){
-          var col = (starts[s] + tickInPhase) % COLS;
-          changeCell(rI, col, true);
-          setLeader(rI, col);
+    } else if(name === "radial"){
+      const ring = circleBuckets.get(tickInPhase);
+      if(ring) for(const [r,c] of ring) changeCell(r, c, true);
+    } else if(name === "square"){
+      const ring = squareBuckets.get(tickInPhase);
+      if(ring) for(const [r,c] of ring) changeCell(r, c, true);
+    } else if(name === "multilines"){
+      for(let r=0;r<ROWS;r++){
+        const starts = multilinesStarts[r];
+        for(const s of starts){
+          const col = (s + tickInPhase) % COLS;
+          changeCell(r, col, true);
         }
       }
-
-    } else if (name === "splitHoriz"){
-      var leftCol  = Math.round(cx - tickInPhase);
-      var rightCol = Math.round(cx + tickInPhase);
-      for (var rJ=0;rJ<ROWS;rJ++){
-        if (leftCol >= 0 && leftCol < COLS){ changeCell(rJ, leftCol, true); setLeader(rJ, leftCol); }
-        if (rightCol >= 0 && rightCol < COLS && rightCol !== leftCol){ changeCell(rJ, rightCol, true); setLeader(rJ, rightCol); }
-      }
-
-    } else if (name === "verticalSplit"){
-      var topRow    = Math.round(cy - tickInPhase);
-      var bottomRow = Math.round(cy + tickInPhase);
-      if (topRow >= 0 && topRow < ROWS){
-        for (var cG=0;cG<COLS;cG++) changeCell(topRow, cG, true);
-        for (var cH=0;cH<COLS;cH++) setLeader(topRow, cH);
-      }
-      if (bottomRow >= 0 && bottomRow < ROWS && bottomRow !== topRow){
-        for (var cI=0;cI<COLS;cI++) changeCell(bottomRow, cI, true);
-        for (var cJ=0;cJ<COLS;cJ++) setLeader(bottomRow, cJ);
-      }
-
-    } else if (name === "diagonals"){
-      var diag = diagBuckets[tickInPhase];
-      if (diag){
-        for (var i4=0;i4<diag.length;i4++){ changeCell(diag[i4][0], diag[i4][1], true); }
-        for (var j4=0;j4<diag.length;j4++){ setLeader(diag[j4][0], diag[j4][1]); }
-      }
-
-    } else if (name === "checkerRipple"){
-      var ring4 = circleBuckets.get(tickInPhase);
-      if (ring4){
-        for (var i5=0;i5<ring4.length;i5++){
-          var rK = ring4[i5][0], cK = ring4[i5][1];
-          if (((rK + cK + checkerParity) & 1) === 0) { changeCell(rK, cK, true); setLeader(rK, cK); }
-        }
-      }
-      checkerParity ^= 1;
-
-    } else if (name === "spiralSquare"){
-      // change a chunk; leader shows only at the current tip
-      var CHUNK = 64;
-      var last = null;
-      for (var i6=0; i6<CHUNK && spiralPtr < spiralLen; i6++, spiralPtr++){
-        var rc = spiralOrder[spiralPtr];
-        changeCell(rc[0], rc[1], true);
-        last = rc;
-      }
-      if (last) setLeader(last[0], last[1]);
-
-    } else if (name === "zigzag"){
-      var trail = 2;
-      for (var z=0; z<zigHeads.length; z++){
-        var head = (zigHeads[z] + tickInPhase) % serpLen;
-        var H = serpentine[head];
-        setLeader(H[0], H[1]); // head marker
-        for (var t=0; t<=trail; t++){
-          var idx = (head - t + serpLen) % serpLen;
-          var P = serpentine[idx];
-          changeCell(P[0], P[1], true);
-        }
-      }
-
-    } else if (name === "starburst"){
-      for (var sd=0; sd<starDirs.length; sd++){
-        var dr = starDirs[sd][0], dc = starDirs[sd][1];
-        var rr = Math.round(cy + dr * tickInPhase);
-        var cc = Math.round(cx + dc * tickInPhase);
-        if (rr>=0 && rr<ROWS && cc>=0 && cc<COLS){
-          changeCell(rr, cc, true);
-          setLeader(rr, cc); // ray tips
-        }
+    } else if(name === "zigzag"){
+      for(let r=0;r<ROWS;r++){
+        const offset = r % 2 === 0 ? tickInPhase % COLS : COLS - 1 - (tickInPhase % COLS);
+        changeCell(r, offset, true);
       }
     }
-
-    // advance tick with a small hold at the end
     tickInPhase++;
-    if (tickInPhase >= phaseDuration(name)){
-      if (holding < holdTicks){ holding++; return; }
-      nextPhase();
+    if(tickInPhase >= phaseDuration(name)){
+      phaseIndex = (phaseIndex + 1) % PATTERNS.length;
+      initPhase(PATTERNS[phaseIndex]);
     }
   }
 
-  function nextPhase(){
-    phaseIndex = (phaseIndex + 1) % PATTERNS.length;
-    initPhase(PATTERNS[phaseIndex]);
-  }
-
-  // Kick off
   initPhase(PATTERNS[phaseIndex]);
-
-  // Main loop with speed control
-  var rafId = 0, speed = 1;
-  function loop(){
-    for (var i=0; i<speed; i++) stepPhase(PATTERNS[phaseIndex]);
-    rafId = requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(function(){ loop(); });
-
-  // Pause when hidden
-  document.addEventListener('visibilitychange', function(){
-    if (document.hidden){ cancelAnimationFrame(rafId); }
-    else { rafId = requestAnimationFrame(loop); }
-  });
+  let rafId = 0;
+  function loop(){ stepPhase(PATTERNS[phaseIndex]); rafId = requestAnimationFrame(loop); }
+  requestAnimationFrame(()=>{ loop(); });
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ cancelAnimationFrame(rafId); } else { rafId = requestAnimationFrame(loop); }});
 })();
 </script>
 </body>
