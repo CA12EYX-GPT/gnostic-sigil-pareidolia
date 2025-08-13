@@ -56,14 +56,13 @@
 
   /* App/grid */
   #app { position: fixed; inset: 0; display: grid; place-items: center; }
-  #grid {
-    width: 94vw; height: 84vh;               /* a touch tighter */
-    display: grid;
-    grid-template-rows: repeat(24, 1fr);
-    gap: 1px;                                 /* tighter gaps */
-    filter: drop-shadow(0 1px 0 rgba(255,255,255,.04));
-  }
-  .row { display: grid; grid-template-columns: repeat(64, 1fr); gap: 1px; }
+  
+#grid {
+  width: 92vw;
+  height: 82vh;
+  gap: 1px;
+}
+.row { gap: 1px; }
 
   .cell {
     display: flex; align-items: center; justify-content: center;
