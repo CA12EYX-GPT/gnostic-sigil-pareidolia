@@ -279,8 +279,48 @@
       }
     } else if(name === "radial"){
       // circular ring expanding from centre
-      const ring = circleBuckets.get
+      const ring = circleBuckets.get(tickInPhase);
+      if(ring){ for(const [r,c] of ring) changeCell(r, c, true); }
+    } else if(name === "square"){
+      // square (Chebyshev) ring expanding from centre
+      const ring = squareBuckets.get(tickInPhase);
+      if(ring){ for(const [r,c] of ring) changeCell(r, c, true); }
+    } else if(name === "multilines"){
+      // multiple line sweeps per row from different start points
+      for(let r=0;r<ROWS;r++){
+        const starts = multilinesStarts[r];
+        for(const s of starts){
+          const col = (s + tickInPhase) % COLS;
+          changeCell(r, col, true);
+        }
+      }
+    }
+    // advance tick within phase
+    tickInPhase++;
+    if(tickInPhase >= phaseDuration(name)){
+      // next phase
+      phaseIndex = (phaseIndex + 1) % PATTERNS.length;
+      initPhase(PATTERNS[phaseIndex]);
+    }
+  }
 
+  // Kick off
+  initPhase(PATTERNS[phaseIndex]);
+
+  let rafId = 0;
+  function loop(){
+    stepPhase(PATTERNS[phaseIndex]);
+    rafId = requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(()=>{ loop(); console.log("Waterfall sequencer started"); });
+
+  // Pause when hidden
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.hidden){ cancelAnimationFrame(rafId); }
+    else{ rafId = requestAnimationFrame(loop); }
+  });
+})();
+</script>
 
 </body>
 </html>
