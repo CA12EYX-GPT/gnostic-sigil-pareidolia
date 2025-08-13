@@ -53,15 +53,17 @@
   }
   .button:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
   .hint { opacity: .6; font-size: 12px; margin-left: 8px; }
+
   #app { position: fixed; inset: 0; display: grid; place-items: center; }
   #grid {
-    width: 92vw; height: 82vh;
+    width: 92vw; height: 82vh;            /* tighter overall size */
     display: grid;
     grid-template-rows: repeat(24, 1fr);
-    gap: 1px;
+    gap: 1px;                              /* tighter gaps */
     filter: drop-shadow(0 1px 0 rgba(255,255,255,.04));
   }
   .row { display: grid; grid-template-columns: repeat(64, 1fr); gap: 1px; }
+
   .cell {
     display: flex; align-items: center; justify-content: center;
     min-width: 0;
@@ -69,6 +71,7 @@
     transition: opacity .15s linear, transform .15s linear;
     will-change: contents, opacity;
   }
+
   .word { color: var(--glow); text-shadow: 0 0 10px var(--glow); font-weight: 600; }
   .leader {
     color: var(--leader);
@@ -81,50 +84,44 @@
     text-shadow: 0 0 8px var(--glow);
     font-weight: 600;
   }
+
+  /* Subtle shimmer */
   @keyframes shimmer { 0% { opacity: .94; } 50% { opacity: .98; } 100% { opacity: .94; } }
   #grid { animation: shimmer 6s ease-in-out infinite; }
+
+  /* Ritual mode intensifies the vibe slightly */
   .ritual .cell { opacity: .97; }
   .ritual #grid { animation-duration: 4.5s; }
 
-/* --- Mobile polish (portrait phones) --- */
-@media (max-width: 768px) and (orientation: portrait) {
-  /* Tidy the header and give the grid a bit more room */
-  .bar { height: 40px; padding: 0 10px; }
-  .hint { display: none; }
-  .button { padding: 4px 8px; font-size: 11px; }
-
-  /* Keep the grid’s aspect ratio (64 cols : 24 rows ≈ 2.667) and fill screen smartly */
-  #grid {
-    aspect-ratio: 64 / 24;              /* maintain shape, no squash */
-    width: min(98vw, calc(100vh - 52px));
-    height: auto;                        /* let aspect-ratio drive height */
-    gap: 0.75px;                         /* tighter gaps on small screens */
+  /* --- Mobile polish (portrait phones) --- */
+  @media (max-width: 768px) and (orientation: portrait) {
+    .bar { height: 40px; padding: 0 10px; }
+    .hint { display: none; }
+    .button { padding: 4px 8px; font-size: 11px; }
+    #grid {
+      aspect-ratio: 64 / 24;
+      width: min(98vw, calc(100vh - 52px));
+      height: auto;
+      gap: 0.75px;
+    }
+    .row { gap: 0.75px; }
+    body { font-size: clamp(12px, 3.6vw, 14px); }
   }
-  .row { gap: 0.75px; }
-
-  /* Slightly smaller type so characters don’t clip */
-  body { font-size: clamp(12px, 3.6vw, 14px); }
-}
-
-/* Ultra-small devices */
-@media (max-width: 380px) and (orientation: portrait) {
-  #grid { gap: 0.5px; }
-  .row  { gap: 0.5px; }
-  body  { font-size: clamp(11px, 3.8vw, 13px); }
-}
-
-/* Landscape phones (short height) */
-@media (max-height: 520px) and (orientation: landscape) {
-  .bar { height: 36px; }
-  #grid {
-    aspect-ratio: 64 / 24;
-    height: calc(100vh - 44px);
-    width: auto;                        /* let aspect-ratio drive width */
-    gap: 0.75px;
+  @media (max-width: 380px) and (orientation: portrait) {
+    #grid { gap: 0.5px; }
+    .row  { gap: 0.5px; }
+    body  { font-size: clamp(11px, 3.8vw, 13px); }
   }
-  .row { gap: 0.75px; }
-}
-
+  @media (max-height: 520px) and (orientation: landscape) {
+    .bar { height: 36px; }
+    #grid {
+      aspect-ratio: 64 / 24;
+      height: calc(100vh - 44px);
+      width: auto;
+      gap: 0.75px;
+    }
+    .row { gap: 0.75px; }
+  }
 </style>
 </head>
 <body>
@@ -146,13 +143,15 @@
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const leaderSigils = ["◉","∆","⟁","✧","◬","◆"];
 
+  /* Word packs (curated) */
   const PACKS = {
     gnostic: ["AEON","PNEU","LOGOS","NOUS","SOPHIA","PLEROMA","ARCHON","DAEMON","ABRAX","OGDOAD","SETH","YALT","BARB","HYMN","RITE","MYTH","SIGIL","OROB","EIDOL","GNOSIS","APOPH"],
     spiritual: ["AURA","OMEN","GRACE","ANGEL","LOTUS","PRANA","MANA","NAMAS","ALIGN","LIGHT","GUIDE","HEART","SOUL","INNER","CHANT","BREATHE","FAITH","HOPE","PEACE","BLESS"],
     positive: ["KIND","BRAVE","TRUE","LUCK","SMILE","SHINE","JOY","CALM","EASE","GOOD","RISE","GLOW","LOVE","HEAL","TRUST","CLEAR","AIM","FLOW","BEST","WIN"],
-    neutral: ["THE","AND","YOU","SUN","SEA","ARC","ORB","KEY","EYE","ART","STAR","PATH","SIGN","SONG"]
+    neutral:  ["THE","AND","YOU","SUN","SEA","ARC","ORB","KEY","EYE","ART","STAR","PATH","SIGN","SONG"]
   };
 
+  /* Pre-index by length for O(1) selection */
   const PACKS_BY_LEN = {};
   for (const [pack, list] of Object.entries(PACKS)) {
     for (const w of list) {
@@ -162,25 +161,19 @@
     }
   }
 
-  function pickPack() {
+  function pickPack(ritual){
     const weights = ritual
-      ? [["gnostic", 0.55], ["spiritual", 0.25], ["positive", 0.15], ["neutral", 0.05]]
-      : [["gnostic", 0.25], ["spiritual", 0.30], ["positive", 0.30], ["neutral", 0.15]];
-    const r = Math.random();
-    let acc = 0;
-    for (const [name, w] of weights) { acc += w; if (r < acc) return name; }
+      ? [["gnostic",0.55],["spiritual",0.25],["positive",0.15],["neutral",0.05]]
+      : [["gnostic",0.25],["spiritual",0.30],["positive",0.30],["neutral",0.15]];
+    const r = Math.random(); let acc=0;
+    for (const [name,w] of weights){ acc+=w; if(r<acc) return name; }
     return "neutral";
   }
-
-  function pickWordByLength(desiredLen) {
-    const pack = pickPack();
-    const table = PACKS_BY_LEN[pack];
+  function pickWordByLength(desiredLen, ritual){
+    const table = PACKS_BY_LEN[pickPack(ritual)];
     if (!table) return null;
     const lens = [desiredLen, desiredLen-1, desiredLen+1, desiredLen-2, desiredLen+2];
-    for (const L of lens) {
-      const arr = table[L];
-      if (arr && arr.length) return arr[(Math.random()*arr.length)|0];
-    }
+    for (const L of lens){ const arr = table[L]; if (arr?.length) return arr[(Math.random()*arr.length)|0]; }
     const flat = Object.values(table).flat();
     return flat.length ? flat[(Math.random()*flat.length)|0] : null;
   }
@@ -190,7 +183,7 @@
   const toggleBtn = document.getElementById('toggle-ritual');
   if(!gridEl) return;
 
-  // Build grid once
+  /* Build grid once */
   const rows = [];
   for(let r=0;r<ROWS;r++){
     const row = document.createElement('div');
@@ -207,10 +200,9 @@
     rows.push(cells);
   }
 
-  // === ADD THESE HELPERS RIGHT HERE ===
+  /* Glow-overlap guards */
   let glowSeq = 0;                          // unique id per glow
-  const rowGlowBusy = Array(ROWS).fill(false); // optional: one glow at a time per row
-
+  const rowGlowBusy = Array(ROWS).fill(false);
   function spanIsFree(r, start, len){
     for (let i=0;i<len;i++){
       const cell = rows[r]?.[start+i];
@@ -220,7 +212,7 @@
     return true;
   }
 
-
+  /* Ritual toggle */
   let ritual = false;
   function setMode(isRitual){
     ritual = !!isRitual;
@@ -232,75 +224,76 @@
   function isTypingInField(t){ return t && (t.isContentEditable || ['INPUT','TEXTAREA','SELECT'].includes(t.tagName)); }
   document.addEventListener('keydown', (e)=>{ if(isTypingInField(e.target)) return; if((e.key||'').toLowerCase()==='r'){ e.preventDefault(); setMode(!ritual); }});
 
-function maybeGlow(r, c){
-  // choose 3–5; may fall back to nearby lengths if pack lacks exact
-  let len = 3;
-  if (Math.random() < (ritual ? 0.45 : 0.25)) len++;
-  if (Math.random() < (ritual ? 0.20 : 0.10)) len++;
+  /* Word glow (2× duration) with no-overlap + IDs */
+  function maybeGlow(r, c){
+    let len = 3;
+    if (Math.random() < (ritual ? 0.45 : 0.25)) len++;
+    if (Math.random() < (ritual ? 0.20 : 0.10)) len++;
+    const start = c - (len - 1);
+    if (start < 0) return;
+    if (rowGlowBusy[r]) return;
+    if (!spanIsFree(r, start, len)) return;
 
-  const start = c - (len - 1);
-  if (start < 0) return;
+    const word = pickWordByLength(len, ritual);
+    if (!word) return;
 
-  // optional: prevent multiple glows fighting on the same row
-  if (rowGlowBusy[r]) return;
+    const id = (++glowSeq) + "";
+    const txt = word.slice(-len);
+    rowGlowBusy[r] = true;
+    const dur = ritual ? 2200 : 1600;
 
-  // only glow if the intended span is free (prevents AL + JOY merging)
-  if (!spanIsFree(r, start, len)) return;
-
-  const word = pickWordByLength(len);
-  if (!word) return;
-
-  const id = (++glowSeq) + "";            // id as string
-  const txt = word.slice(-len);
-
-  rowGlowBusy[r] = true;
-  const dur = ritual ? 2200 : 1600;
-
-  for (let i=0;i<txt.length;i++){
-    const cell = rows[r][start + i];
-    cell.textContent = txt[i];
-    cell.classList.remove('leader','sigil-static'); // make it purely a word
-    cell.dataset.wordId = id;
-    cell.classList.add('word');
-  }
-
-  // remove the glow only if it's still the same id (won't kill newer glows)
-  setTimeout(()=>{
     for (let i=0;i<txt.length;i++){
       const cell = rows[r][start + i];
-      if (cell && cell.dataset.wordId === id){
-        cell.classList.remove('word');
-        delete cell.dataset.wordId;
-      }
+      cell.textContent = txt[i];
+      cell.classList.remove('leader','sigil-static');
+      cell.dataset.wordId = id;
+      cell.classList.add('word');
     }
-    rowGlowBusy[r] = false;
-  }, dur);
-}
-
-
-function changeCell(r, c, allowGlow = true){
-  const cell = rows[r]?.[c];
-  if(!cell) return;
-
-  // Clear any previous roles
-  cell.classList.remove('leader','sigil-static','word');
-  delete cell.dataset.wordId;
-
-  // Normal letter change
-  cell.textContent = letters[(Math.random()*letters.length)|0];
-
-  // Micro flicker
-  if(Math.random() < (ritual ? 0.04 : 0.025)){
-    cell.style.opacity = "0.7";
-    setTimeout(()=>{ cell.style.opacity = "0.95"; }, 160);
+    setTimeout(()=>{
+      for (let i=0;i<txt.length;i++){
+        const cell = rows[r][start + i];
+        if (cell && cell.dataset.wordId === id){
+          cell.classList.remove('word');
+          delete cell.dataset.wordId;
+        }
+      }
+      rowGlowBusy[r] = false;
+    }, dur);
   }
 
-  // Maybe glow a word
-  const wordChance = ritual ? 0.14 : 0.1;
-  if(allowGlow && Math.random() < wordChance) maybeGlow(r, c);
-}
+  /* Change a cell: letters OR rare static teal sigil */
+  function changeCell(r, c, allowGlow = true){
+    const cell = rows[r]?.[c];
+    if(!cell) return;
 
+    // Clear any previous roles
+    cell.classList.remove('leader','sigil-static','word');
+    delete cell.dataset.wordId;
 
+    // Rare static teal sigil for ambience
+    const staticSigilChance = ritual ? 0.03 : 0.015;
+    if (Math.random() < staticSigilChance){
+      const sig = leaderSigils[(Math.random()*leaderSigils.length)|0];
+      cell.textContent = sig;
+      cell.classList.add('sigil-static');
+      return;
+    }
+
+    // Normal letter change
+    cell.textContent = letters[(Math.random()*letters.length)|0];
+
+    // Micro flicker
+    if(Math.random() < (ritual ? 0.04 : 0.025)){
+      cell.style.opacity = "0.7";
+      setTimeout(()=>{ cell.style.opacity = "0.95"; }, 160);
+    }
+
+    // Maybe glow a word
+    const wordChance = ritual ? 0.14 : 0.10;
+    if(allowGlow && Math.random() < wordChance) maybeGlow(r, c);
+  }
+
+  /* Leader helpers */
   const leaderChars = Array.from({length: ROWS}, (_,r)=> leaderSigils[r % leaderSigils.length]);
   function setLeader(r, c){
     const cell = rows[r]?.[c];
@@ -312,20 +305,23 @@ function changeCell(r, c, allowGlow = true){
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) rows[r][c].classList.remove('leader');
   }
 
+  /* Geometry: rings */
   const cx = (COLS-1)/2, cy = (ROWS-1)/2;
   const circleBuckets = new Map(); let maxCircle = 0;
   const squareBuckets = new Map(); let maxSquare = 0;
   for(let r=0;r<ROWS;r++){
     for(let c=0;c<COLS;c++){
-      const rrC = Math.round(Math.hypot(c - cx, r - cy));
-      maxCircle = Math.max(maxCircle, rrC);
-      (circleBuckets.get(rrC) || circleBuckets.set(rrC,[]).get(rrC)).push([r,c]);
-      const rrS = Math.max(Math.abs(c - cx), Math.abs(r - cy));
-      maxSquare = Math.max(maxSquare, rrS);
-      (squareBuckets.get(rrS) || squareBuckets.set(rrS,[]).get(rrS)).push([r,c]);
+      const kC = Math.round(Math.hypot(c - cx, r - cy));
+      maxCircle = Math.max(maxCircle, kC);
+      (circleBuckets.get(kC) || circleBuckets.set(kC,[]).get(kC)).push([r,c]);
+
+      const kS = Math.max(Math.abs(c - cx), Math.abs(r - cy));
+      maxSquare = Math.max(maxSquare, kS);
+      (squareBuckets.get(kS) || squareBuckets.set(kS,[]).get(kS)).push([r,c]);
     }
   }
 
+  /* Patterns */
   const PATTERNS = ["line","radial","multilines","square","zigzag","line"];
   let phaseIndex = 0, tickInPhase = 0;
   let lineHeads = Array.from({length: ROWS}, ()=> 0);
@@ -339,7 +335,7 @@ function changeCell(r, c, allowGlow = true){
       for(let r=0;r<ROWS;r++) setLeader(r, 0);
     } else if(name === "multilines"){
       multilinesStarts = Array.from({length: ROWS}, ()=>{
-        const count = 2 + ((Math.random()*3)|0);
+        const count = 2 + ((Math.random()*3)|0); // 2–4 per row
         const picks = new Set();
         while(picks.size < count) picks.add((Math.random()*COLS)|0);
         return Array.from(picks);
@@ -349,16 +345,19 @@ function changeCell(r, c, allowGlow = true){
 
   function phaseDuration(name){
     switch(name){
-      case "line": return COLS;
-      case "radial": return maxCircle + 1;
-      case "square": return maxSquare + 1;
-      case "multilines": return COLS;
-      case "zigzag": return COLS * 2;
-      default: return COLS;
+      case "line":        return COLS;
+      case "radial":      return maxCircle + 1;
+      case "square":      return maxSquare + 1;
+      case "multilines":  return COLS;
+      case "zigzag":      return COLS * 2;
+      default:            return COLS;
     }
   }
 
   function stepPhase(name){
+    // Clear previous tick’s leaders so heads don’t leave red trails
+    clearAllLeaders();
+
     if(name === "line"){
       for(let r=0;r<ROWS;r++){
         const prev = lineHeads[r], next = (prev + 1) % COLS;
@@ -366,26 +365,39 @@ function changeCell(r, c, allowGlow = true){
         setLeader(r, next);
         lineHeads[r] = next;
       }
+
     } else if(name === "radial"){
       const ring = circleBuckets.get(tickInPhase);
-      if(ring) for(const [r,c] of ring) changeCell(r, c, true);
+      if(ring){
+        for(const [r,c] of ring) changeCell(r, c, true);
+        for(const [r,c] of ring) setLeader(r, c); // show ring heads
+      }
+
     } else if(name === "square"){
       const ring = squareBuckets.get(tickInPhase);
-      if(ring) for(const [r,c] of ring) changeCell(r, c, true);
+      if(ring){
+        for(const [r,c] of ring) changeCell(r, c, true);
+        for(const [r,c] of ring) setLeader(r, c);
+      }
+
     } else if(name === "multilines"){
       for(let r=0;r<ROWS;r++){
         const starts = multilinesStarts[r];
         for(const s of starts){
           const col = (s + tickInPhase) % COLS;
           changeCell(r, col, true);
+          setLeader(r, col);
         }
       }
+
     } else if(name === "zigzag"){
       for(let r=0;r<ROWS;r++){
-        const offset = r % 2 === 0 ? tickInPhase % COLS : COLS - 1 - (tickInPhase % COLS);
-        changeCell(r, offset, true);
+        const col = r % 2 === 0 ? (tickInPhase % COLS) : (COLS - 1 - (tickInPhase % COLS));
+        changeCell(r, col, true);
+        setLeader(r, col);
       }
     }
+
     tickInPhase++;
     if(tickInPhase >= phaseDuration(name)){
       phaseIndex = (phaseIndex + 1) % PATTERNS.length;
@@ -393,11 +405,17 @@ function changeCell(r, c, allowGlow = true){
     }
   }
 
+  /* Start */
   initPhase(PATTERNS[phaseIndex]);
   let rafId = 0;
   function loop(){ stepPhase(PATTERNS[phaseIndex]); rafId = requestAnimationFrame(loop); }
   requestAnimationFrame(()=>{ loop(); });
-  document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ cancelAnimationFrame(rafId); } else { rafId = requestAnimationFrame(loop); }});
+
+  /* Power-save when hidden */
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.hidden){ cancelAnimationFrame(rafId); }
+    else { rafId = requestAnimationFrame(loop); }
+  });
 })();
 </script>
 </body>
