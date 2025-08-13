@@ -111,7 +111,8 @@
   </div>
 
 <script>
-/* Waterfall (row-wise) with a persistent leader sigil per row */
+/* Waterfall with pattern sequencer:
+   line → radial(circle) → multilines → square → line → repeat */
 (function(){
   // Config
   const COLS = 64, ROWS = 24;
@@ -119,17 +120,13 @@
   const leaderSigils = ["◉","∆","⟁","✧","◬","◆"];
   const words = ["THE","AND","YOU","SIG","ART","SEA","SUN","GOD","ARC","ORB","KEY","EYE","GNOS","SIGIL"];
 
-  // DOM refs (guarded)
+  // DOM refs
   const gridEl = document.getElementById('grid');
   const modeEl = document.getElementById('mode');
   const toggleBtn = document.getElementById('toggle-ritual');
+  if(!gridEl){ console.error("Mount element missing (#grid)."); return; }
 
-  if(!gridEl){
-    console.error("Mount element missing (#grid).");
-    return;
-  }
-
-  // Build DOM once
+  // Build grid once
   const rows = [];
   for(let r=0;r<ROWS;r++){
     const row = document.createElement('div');
@@ -146,103 +143,144 @@
     rows.push(cells);
   }
 
-  // Ritual state + helpers
+  // Ritual toggle
   let ritual = false;
   function setMode(isRitual){
     ritual = !!isRitual;
     document.body.classList.toggle('ritual', ritual);
-    if(modeEl) modeEl.textContent = ritual ? "Mode: Ritual" : "Mode: Normal";
-    if(toggleBtn) toggleBtn.setAttribute('aria-pressed', ritual ? 'true' : 'false');
+    modeEl && (modeEl.textContent = ritual ? "Mode: Ritual" : "Mode: Normal");
+    toggleBtn && toggleBtn.setAttribute('aria-pressed', ritual ? 'true' : 'false');
   }
-
-  // Click support (mobile-safe)
   toggleBtn?.addEventListener('click', () => setMode(!ritual));
+  function isTypingInField(t){ return t && (t.isContentEditable || ['INPUT','TEXTAREA','SELECT'].includes(t.tagName)); }
+  document.addEventListener('keydown', (e)=>{ if(isTypingInField(e.target)) return; if((e.key||'').toLowerCase()==='r'){ e.preventDefault(); setMode(!ritual); }});
 
-  // Keyboard support (desktop)
-  function isTypingInField(t){
-    return t && (t.isContentEditable || ['INPUT','TEXTAREA','SELECT'].includes(t.tagName));
-  }
-  document.addEventListener('keydown', (e)=>{
-    if (isTypingInField(e.target)) return;
-    const k = (e.key || '').toLowerCase();
-    if (k === 'r') { e.preventDefault(); setMode(!ritual); }
-  });
-
-  // Word glow helper (3–5 chars) — triggered *behind* the leader
-  function maybeGlow(rowIdx, head){
+  // Word glow helper (3–5 chars), seeded from a "head" (r,c)
+  function maybeGlow(r, c){
     const len = 3 + (Math.random() < (ritual ? 0.45 : 0.25) ? 1 : 0) + (Math.random() < (ritual ? 0.20 : 0.10) ? 1 : 0);
-    if(head - len + 1 < 0) return;
-    const word = words[(Math.random()*words.length)|0];
-    const txt = word.slice(0, Math.min(len, word.length));
-    for(let i=0;i<txt.length;i++){
-      const cell = rows[rowIdx][head - (txt.length-1-i)];
+    const start = c - (len - 1);
+    if(start < 0) return;
+    const word = words[(Math.random()*words.length)|0].slice(0, len);
+    for(let i=0;i<word.length;i++){
+      const cell = rows[r]?.[start + i];
       if(!cell) return;
-      cell.textContent = txt[i];
+      cell.textContent = word[i];
       cell.classList.add('word');
       setTimeout(()=>cell.classList.remove('word'), ritual ? 1100 : 800);
     }
   }
 
-  // Per-row leader state
-  const heads = Array.from({length: ROWS}, ()=> 0);
-  const leaderChars = Array.from({length: ROWS}, (_,r)=> leaderSigils[r % leaderSigils.length]);
-
-  // Initialize leaders at col 0
-  for(let r=0;r<ROWS;r++){
-    const c0 = rows[r][0];
-    c0.textContent = leaderChars[r];
-    c0.classList.add('leader');
-  }
-
-  let rafId = 0;
-
-  // Core tick: the leader moves one step; the cell it leaves behind becomes a new character (and may spark a word)
-  function step(){
-    for(let r=0;r<ROWS;r++){
-      const prev = heads[r];
-      const next = (prev + 1) % COLS;
-
-      // 1) Clear previous leader -> becomes changing letter (the "waterfall" change)
-      const prevCell = rows[r][prev];
-      if(prevCell){
-        prevCell.classList.remove('leader');
-        // Subtle flicker to show change happened
-        if(Math.random() < (ritual ? 0.04 : 0.025)){
-          prevCell.style.opacity = "0.7";
-          setTimeout(()=>{ prevCell.style.opacity = "0.95"; }, 160);
-        }
-        // The leaving leader *causes* the change behind it
-        prevCell.textContent = letters[(Math.random()*letters.length)|0];
-        // Occasional word formation behind the leader
-        const wordChance = ritual ? 0.14 : 0.1;
-        if(Math.random() < wordChance) maybeGlow(r, prev);
-      }
-
-      // 2) Set the leader at the new head
-      const headCell = rows[r][next];
-      if(headCell){
-        headCell.textContent = leaderChars[r];
-        headCell.classList.add('leader');
-      }
-
-      heads[r] = next;
+  // Change a cell (letter noise + micro flicker + occasional word)
+  function changeCell(r, c, allowGlow=true){
+    const cell = rows[r]?.[c];
+    if(!cell) return;
+    cell.classList.remove('leader');
+    cell.textContent = letters[(Math.random()*letters.length)|0];
+    if(Math.random() < (ritual ? 0.04 : 0.025)){
+      cell.style.opacity = "0.7";
+      setTimeout(()=>{ cell.style.opacity = "0.95"; }, 160);
     }
-    rafId = requestAnimationFrame(step);
+    const wordChance = ritual ? 0.14 : 0.1;
+    if(allowGlow && Math.random() < wordChance) maybeGlow(r, c);
   }
 
-  // Start after paint
-  requestAnimationFrame(()=>{
-    step();
-    console.log("Waterfall with leader sigil started");
-  });
+  // Leader helpers (only in line mode)
+  const leaderChars = Array.from({length: ROWS}, (_,r)=> leaderSigils[r % leaderSigils.length]);
+  function setLeader(r, c){
+    const cell = rows[r]?.[c];
+    if(!cell) return;
+    cell.textContent = leaderChars[r];
+    cell.classList.add('leader');
+  }
+  function clearAllLeaders(){
+    for(let r=0;r<ROWS;r++){
+      for(let c=0;c<COLS;c++){
+        rows[r][c].classList.remove('leader');
+      }
+    }
+  }
 
-  // Pause when hidden to save cycles
-  document.addEventListener('visibilitychange', ()=>{
-    if(document.hidden){ cancelAnimationFrame(rafId); }
-    else{ rafId = requestAnimationFrame(step); }
-  });
-})();
-</script>
+  // Geometry precompute for pulses
+  const cx = (COLS-1)/2, cy = (ROWS-1)/2;
+  // Euclidean radius buckets (for circular pulse)
+  const circleBuckets = new Map(); // radiusInt -> array of [r,c]
+  let maxCircle = 0;
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const rr = Math.hypot(c - cx, r - cy);
+      const k = Math.round(rr);
+      maxCircle = Math.max(maxCircle, k);
+      const list = circleBuckets.get(k) || [];
+      list.push([r,c]);
+      circleBuckets.set(k, list);
+    }
+  }
+  // Chebyshev radius buckets (for square pulse)
+  const squareBuckets = new Map(); // radius -> array of [r,c]
+  let maxSquare = 0;
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const rr = Math.max(Math.abs(c - cx), Math.abs(r - cy));
+      maxSquare = Math.max(maxSquare, rr);
+      const list = squareBuckets.get(rr) || [];
+      list.push([r,c]);
+      squareBuckets.set(rr, list);
+    }
+  }
+
+  // Pattern sequencer
+  const PATTERNS = ["line","radial","multilines","square","line"];
+  let phaseIndex = 0;
+  let tickInPhase = 0;
+
+  // Per-phase state
+  let lineHeads = Array.from({length: ROWS}, ()=> 0);
+  let multilinesStarts = []; // per row: array of start cols
+
+  function initPhase(name){
+    clearAllLeaders();
+    tickInPhase = 0;
+    if(name === "line"){
+      // reset heads + draw leaders at 0
+      lineHeads = Array.from({length: ROWS}, ()=> 0);
+      for(let r=0;r<ROWS;r++) setLeader(r, 0);
+    } else if(name === "multilines"){
+      // choose 2–4 lines per row with random starts
+      multilinesStarts = Array.from({length: ROWS}, ()=>{
+        const count = 2 + ((Math.random()*3)|0); // 2–4
+        const picks = new Set();
+        while(picks.size < count){
+          picks.add((Math.random()*COLS)|0);
+        }
+        return Array.from(picks);
+      });
+    }
+  }
+
+  function phaseDuration(name){
+    switch(name){
+      case "line": return COLS;
+      case "radial": return maxCircle + 1;
+      case "square": return maxSquare + 1;
+      case "multilines": return COLS;
+      default: return COLS;
+    }
+  }
+
+  function stepPhase(name){
+    if(name === "line"){
+      // advance each row head one step; change the cell we just left
+      for(let r=0;r<ROWS;r++){
+        const prev = lineHeads[r];
+        const next = (prev + 1) % COLS;
+        changeCell(r, prev, true);
+        setLeader(r, next);
+        lineHeads[r] = next;
+      }
+    } else if(name === "radial"){
+      // circular ring expanding from centre
+      const ring = circleBuckets.get
+
 
 </body>
 </html>
