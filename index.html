@@ -10,8 +10,10 @@
     --bg: #0b0b0b;
     --fg: #e6e6e6;
     --muted: #9aa0a6;
-    --glow: #00e0d1; /* teal glow for real words */
+    --glow: #00e0d1;   /* teal for words & static sigils */
+    --leader: #ff4343; /* red for moving leader sigils */
   }
+
   /* Reset + base */
   html, body { height: 100%; }
   * { box-sizing: border-box; }
@@ -38,8 +40,7 @@
   .brand { opacity: .75; font-weight: 600; }
   .mode {
     pointer-events: auto;
-    font-size: 12px;
-    color: var(--muted);
+    font-size: 12px; color: var(--muted);
     padding: 4px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.08);
     background: rgba(255,255,255,.03);
     user-select: none;
@@ -56,13 +57,14 @@
 
   /* App/grid */
   #app { position: fixed; inset: 0; display: grid; place-items: center; }
-  
-#grid {
-  width: 92vw;
-  height: 82vh;
-  gap: 1px;
-}
-.row { gap: 1px; }
+  #grid {
+    width: 92vw; height: 82vh;          /* tighter overall size */
+    display: grid;
+    grid-template-rows: repeat(24, 1fr);
+    gap: 1px;                           /* tighter gaps */
+    filter: drop-shadow(0 1px 0 rgba(255,255,255,.04));
+  }
+  .row { display: grid; grid-template-columns: repeat(64, 1fr); gap: 1px; }
 
   .cell {
     display: flex; align-items: center; justify-content: center;
@@ -71,8 +73,23 @@
     will-change: contents, opacity;
   }
 
-  .word { color: var(--glow); text-shadow: 0 0 8px var(--glow); font-weight: 600; }
-  .sigil { filter: drop-shadow(0 0 6px var(--fg)); }
+  /* formed words: TEAL + longer glow handled in JS timeout */
+  .word { color: var(--glow); text-shadow: 0 0 10px var(--glow); font-weight: 600; }
+
+  /* moving heads: RED */
+  .leader {
+    color: var(--leader);
+    text-shadow: 0 0 10px var(--leader), 0 0 18px rgba(255,67,67,.45);
+    font-weight: 700;
+    transform: translateZ(0);
+  }
+
+  /* rare static/background sigils: TEAL */
+  .sigil-static {
+    color: var(--glow);
+    text-shadow: 0 0 8px var(--glow);
+    font-weight: 600;
+  }
 
   /* Subtle shimmer */
   @keyframes shimmer { 0% { opacity: .94; } 50% { opacity: .98; } 100% { opacity: .94; } }
@@ -81,40 +98,6 @@
   /* Ritual mode intensifies the vibe slightly */
   .ritual .cell { opacity: .97; }
   .ritual #grid { animation-duration: 4.5s; }
-
-  /* Leader sigil (used as moving “head”) */
-  .leader {
-    filter: drop-shadow(0 0 10px rgba(255,255,255,.55));
-    font-weight: 700;
-    transform: translateZ(0);
-  }
-
-  :root {
-  --bg: #0b0b0b;
-  --fg: #e6e6e6;
-  --muted: #9aa0a6;
-  --glow: #00e0d1;      /* teal for words & static sigils */
-  --leader: #ff4343;    /* red for moving leader sigils */
-}
-
-/* formed words (already teal) */
-.word { color: var(--glow); text-shadow: 0 0 10px var(--glow); font-weight: 600; }
-
-/* moving “head” sigils = RED */
-.leader {
-  color: var(--leader);
-  text-shadow: 0 0 10px var(--leader), 0 0 18px rgba(255,67,67,.45);
-  font-weight: 700;
-  transform: translateZ(0);
-}
-
-/* rare, background/static sigils = TEAL */
-.sigil-static {
-  color: var(--glow);
-  text-shadow: 0 0 8px var(--glow);
-  font-weight: 600;
-}
-
 </style>
 </head>
 <body>
@@ -134,28 +117,28 @@
   </div>
 
 <script>
-/* Waterfall with extended patterns + visible leader heads in every mode */
+/* Waterfall with extended patterns + visible leader heads in every mode (tight grid + color rules) */
 (function(){
   // Config
-  const COLS = 64, ROWS = 24;
-  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const leaderSigils = ["◉","∆","⟁","✧","◬","◆"];
-  const words = ["THE","AND","YOU","SIG","ART","SEA","SUN","GOD","ARC","ORB","KEY","EYE","GNOS","SIGIL"];
+  var COLS = 64, ROWS = 24;
+  var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  var leaderSigils = ["◉","∆","⟁","✧","◬","◆"];
+  var words = ["THE","AND","YOU","SIG","ART","SEA","SUN","GOD","ARC","ORB","KEY","EYE","GNOS","SIGIL"];
 
   // DOM refs
-  const gridEl = document.getElementById('grid');
-  const modeEl = document.getElementById('mode');
-  const toggleBtn = document.getElementById('toggle-ritual');
-  if(!gridEl){ console.error("Mount element missing (#grid)."); return; }
+  var gridEl = document.getElementById('grid');
+  var modeEl = document.getElementById('mode');
+  var toggleBtn = document.getElementById('toggle-ritual');
+  if(!gridEl){ return; }
 
   // Build grid once
-  const rows = [];
-  for (let r=0; r<ROWS; r++){
-    const row = document.createElement('div');
+  var rows = [];
+  for (var r=0; r<ROWS; r++){
+    var row = document.createElement('div');
     row.className = 'row';
-    const cells = [];
-    for (let c=0; c<COLS; c++){
-      const span = document.createElement('span');
+    var cells = [];
+    for (var c=0; c<COLS; c++){
+      var span = document.createElement('span');
       span.className = 'cell';
       span.textContent = letters[(Math.random()*letters.length)|0];
       row.appendChild(span);
@@ -166,208 +149,222 @@
   }
 
   // Ritual toggle
-  let ritual = false;
+  var ritual = false;
   function setMode(isRitual){
     ritual = !!isRitual;
-    document.body.classList.toggle('ritual', ritual);
+    if (document.body && document.body.classList) {
+      if (ritual) document.body.classList.add('ritual');
+      else document.body.classList.remove('ritual');
+    }
     if (modeEl) modeEl.textContent = ritual ? "Mode: Ritual" : "Mode: Normal";
     if (toggleBtn) toggleBtn.setAttribute('aria-pressed', ritual ? 'true' : 'false');
   }
-  toggleBtn?.addEventListener('click', () => setMode(!ritual));
-  function isTypingInField(t){ return t && (t.isContentEditable || ['INPUT','TEXTAREA','SELECT'].includes(t.tagName)); }
-  document.addEventListener('keydown', (e)=>{
+  if (toggleBtn) toggleBtn.addEventListener('click', function(){ setMode(!ritual); });
+  function isTypingInField(t){ return t && (t.isContentEditable || ['INPUT','TEXTAREA','SELECT'].indexOf(t.tagName)>=0); }
+  document.addEventListener('keydown', function(e){
     if (isTypingInField(e.target)) return;
-    const k = (e.key || '').toLowerCase();
+    var k = (e.key || '').toLowerCase();
     if (k==='r'){ e.preventDefault(); setMode(!ritual); }
     if (k==='n'){ e.preventDefault(); nextPhase(); }
     if (k===']'){ e.preventDefault(); speed = Math.min(8, speed+1); }
     if (k==='['){ e.preventDefault(); speed = Math.max(1, speed-1); }
   });
 
-  // Word glow helper (3–5 chars), seeded from a "head" (r,c)
-  function maybeGlow(r, c){
-    const len = 3 + (Math.random() < (ritual ? 0.45 : 0.25) ? 1 : 0) + (Math.random() < (ritual ? 0.20 : 0.10) ? 1 : 0);
-    const start = c - (len - 1);
+  // Word glow helper (3–5 chars), seeded from a "head" (r,c) — with 2× duration
+  function maybeGlow(rr, cc){
+    var len = 3 + (Math.random() < (ritual ? 0.45 : 0.25) ? 1 : 0) + (Math.random() < (ritual ? 0.20 : 0.10) ? 1 : 0);
+    var start = cc - (len - 1);
     if (start < 0) return;
-    const word = words[(Math.random()*words.length)|0].slice(0, len);
-    for (let i=0; i<word.length; i++){
-      const cell = rows[r]?.[start + i];
+    var pick = words[(Math.random()*words.length)|0];
+    var txt = pick.slice(0, Math.min(len, pick.length));
+    for (var i=0; i<txt.length; i++){
+      var cell = (rows[rr] && rows[rr][start + i]) ? rows[rr][start + i] : null;
       if (!cell) return;
-      cell.textContent = word[i];
+      cell.textContent = txt[i];
       cell.classList.add('word');
-      setTimeout(()=>cell.classList.remove('word'), ritual ? 2200 : 1600);
+      (function(cellRef){
+        setTimeout(function(){ cellRef.classList.remove('word'); }, ritual ? 2200 : 1600);
+      })(cell);
     }
   }
 
-  // Change a cell (letter noise + micro flicker + occasional word)
-function changeCell(r, c, allowGlow = true){
-  const cell = rows[r]?.[c];
-  if(!cell) return;
+  // Change a cell (letter noise or static sigil + micro flicker + occasional word)
+  function changeCell(rr, cc, allowGlow){
+    if (allowGlow === undefined) allowGlow = true;
+    var cell = rows[rr] ? rows[rr][cc] : null;
+    if(!cell) return;
 
-  // clear any previous roles
-  cell.classList.remove('leader', 'sigil-static', 'word');
+    // clear any previous roles
+    cell.classList.remove('leader','sigil-static','word');
 
-  // Occasionally drop a STATIC (teal) sigil instead of a letter
-  const staticSigilChance = ritual ? 0.03 : 0.015; // tune to taste
-  if (Math.random() < staticSigilChance){
-    const sig = leaderSigils[(Math.random()*leaderSigils.length)|0];
-    cell.textContent = sig;
-    cell.classList.add('sigil-static');
-    // static sigils do not trigger word glows
-  } else {
+    // Rare STATIC teal sigil (atmospheric)
+    var staticSigilChance = ritual ? 0.03 : 0.015;
+    if (Math.random() < staticSigilChance){
+      var sig = leaderSigils[(Math.random()*leaderSigils.length)|0];
+      cell.textContent = sig;
+      cell.classList.add('sigil-static');
+      return;
+    }
+
     // normal letter change
     cell.textContent = letters[(Math.random()*letters.length)|0];
 
     // micro flicker to show activity
     if (Math.random() < (ritual ? 0.04 : 0.025)){
       cell.style.opacity = "0.7";
-      setTimeout(()=>{ cell.style.opacity = "0.95"; }, 160);
+      setTimeout(function(){ cell.style.opacity = "0.95"; }, 160);
     }
 
     // maybe form a word (teal)
-    const wordChance = ritual ? 0.14 : 0.10;
-    if (allowGlow && Math.random() < wordChance) maybeGlow(r, c);
+    var wordChance = ritual ? 0.14 : 0.10;
+    if (allowGlow && Math.random() < wordChance) maybeGlow(rr, cc);
   }
-}
 
   // Leader helpers
-  const leaderChars = Array.from({length: ROWS}, (_,r)=> leaderSigils[r % leaderSigils.length]);
-  function setLeader(r, c){
-    const cell = rows[r]?.[c];
+  var leaderChars = [];
+  for (var lr=0; lr<ROWS; lr++) leaderChars.push(leaderSigils[lr % leaderSigils.length]);
+
+  function setLeader(rr, cc){
+    var cell = rows[rr] ? rows[rr][cc] : null;
     if (!cell) return;
-    cell.textContent = leaderChars[r];
+    cell.textContent = leaderChars[rr];
     cell.classList.add('leader');
   }
   function clearAllLeaders(){
-    for(let r=0;r<ROWS;r++){
-      for(let c=0;c<COLS;c++){
-        rows[r][c].classList.remove('leader');
+    for(var r2=0;r2<ROWS;r2++){
+      for(var c2=0;c2<COLS;c2++){
+        var cell = rows[r2][c2];
+        if (cell) cell.classList.remove('leader');
       }
     }
   }
 
   // Geometry precompute
-  const cx = (COLS-1)/2, cy = (ROWS-1)/2;
+  var cx = (COLS-1)/2, cy = (ROWS-1)/2;
 
   // Circle (Euclidean) rings
-  const circleBuckets = new Map(); let maxCircle = 0;
-  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-    const rr = Math.hypot(c - cx, r - cy);
-    const k = Math.round(rr);
-    maxCircle = Math.max(maxCircle, k);
-    const list = circleBuckets.get(k) || [];
-    list.push([r,c]); circleBuckets.set(k, list);
+  var circleBuckets = new Map(); var maxCircle = 0;
+  for(var rA=0;rA<ROWS;rA++) for(var cA=0;cA<COLS;cA++){
+    var rrA = Math.sqrt((cA - cx)*(cA - cx) + (rA - cy)*(rA - cy));
+    var kA = Math.round(rrA);
+    if (kA > maxCircle) maxCircle = kA;
+    var listA = circleBuckets.get(kA) || [];
+    listA.push([rA,cA]); circleBuckets.set(kA, listA);
   }
 
   // Square (Chebyshev) rings
-  const squareBuckets = new Map(); let maxSquare = 0;
-  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-    const rr = Math.max(Math.abs(c - cx), Math.abs(r - cy));
-    maxSquare = Math.max(maxSquare, rr);
-    const list = squareBuckets.get(rr) || [];
-    list.push([r,c]); squareBuckets.set(rr, list);
+  var squareBuckets = new Map(); var maxSquare = 0;
+  for(var rB=0;rB<ROWS;rB++) for(var cB=0;cB<COLS;cB++){
+    var rrB = Math.max(Math.abs(cB - cx), Math.abs(rB - cy));
+    if (rrB > maxSquare) maxSquare = rrB;
+    var listB = squareBuckets.get(rrB) || [];
+    listB.push([rB,cB]); squareBuckets.set(rrB, listB);
   }
 
   // Diamond (Manhattan) rings
-  const diamondBuckets = new Map(); let maxDiamond = 0;
-  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-    const rr = Math.abs(c - cx) + Math.abs(r - cy);
-    maxDiamond = Math.max(maxDiamond, rr);
-    const list = diamondBuckets.get(rr) || [];
-    list.push([r,c]); diamondBuckets.set(rr, list);
+  var diamondBuckets = new Map(); var maxDiamond = 0;
+  for(var rC=0;rC<ROWS;rC++) for(var cC=0;cC<COLS;cC++){
+    var rrC = Math.abs(cC - cx) + Math.abs(rC - cy);
+    if (rrC > maxDiamond) maxDiamond = rrC;
+    var listC = diamondBuckets.get(rrC) || [];
+    listC.push([rC,cC]); diamondBuckets.set(rrC, listC);
   }
 
   // Diagonals (NW→SE anti-diagonals): group by (c - r)
-  const diagOffsetMin = -(ROWS-1), diagOffsetMax = (COLS-1);
-  const diagBuckets = []; // index = d - diagOffsetMin
-  for(let d=diagOffsetMin; d<=diagOffsetMax; d++){
-    const arr = [];
-    for(let r=0;r<ROWS;r++){
-      const c = r + d;
-      if(c>=0 && c<COLS) arr.push([r,c]);
+  var diagOffsetMin = -(ROWS-1), diagOffsetMax = (COLS-1);
+  var diagBuckets = []; // index = d - diagOffsetMin
+  for(var d=diagOffsetMin; d<=diagOffsetMax; d++){
+    var arr = [];
+    for(var rD=0;rD<ROWS;rD++){
+      var cD = rD + d;
+      if(cD>=0 && cD<COLS) arr.push([rD,cD]);
     }
     diagBuckets.push(arr);
   }
-  const diagCount = diagBuckets.length;
+  var diagCount = diagBuckets.length;
 
   // Spiral (square) order from center outward (clockwise)
-  const spiralOrder = (function(){
-    const order = [];
+  var spiralOrder = (function(){
+    var order = [];
     order.push([Math.round(cy), Math.round(cx)]); // center first
-    for(let rad=1; rad<=maxSquare; rad++){
-      const top = Math.round(cy - rad), bottom = Math.round(cy + rad);
-      const left = Math.round(cx - rad), right = Math.round(cx + rad);
-      for(let c=left; c<=right; c++) if (top>=0 && top<ROWS && c>=0 && c<COLS) order.push([top, c]);
-      for(let r=top+1; r<=bottom; r++) if (r>=0 && r<ROWS && right>=0 && right<COLS) order.push([r, right]);
-      for(let c=right-1; c>=left; c--) if (bottom>=0 && bottom<ROWS && c>=0 && c<COLS) order.push([bottom, c]);
-      for(let r=bottom-1; r>top; r--) if (r>=0 && r<ROWS && left>=0 && left<COLS) order.push([r, left]);
+    for(var rad=1; rad<=maxSquare; rad++){
+      var top = Math.round(cy - rad), bottom = Math.round(cy + rad);
+      var left = Math.round(cx - rad), right = Math.round(cx + rad);
+      for(var c1=left; c1<=right; c1++) if (top>=0 && top<ROWS && c1>=0 && c1<COLS) order.push([top, c1]);
+      for(var r1=top+1; r1<=bottom; r1++) if (r1>=0 && r1<ROWS && right>=0 && right<COLS) order.push([r1, right]);
+      for(var c2=right-1; c2>=left; c2--) if (bottom>=0 && bottom<ROWS && c2>=0 && c2<COLS) order.push([bottom, c2]);
+      for(var r2=bottom-1; r2>top; r2--) if (r2>=0 && r2<ROWS && left>=0 && left<COLS) order.push([r2, left]);
     }
     return order;
   })();
-  const spiralLen = spiralOrder.length;
+  var spiralLen = spiralOrder.length;
 
   // Serpentine (zig-zag) path
-  const serpentine = [];
-  for(let r=0; r<ROWS; r++){
-    if (r % 2 === 0){ for(let c=0;c<COLS;c++) serpentine.push([r,c]); }
-    else { for(let c=COLS-1;c>=0;c--) serpentine.push([r,c]); }
+  var serpentine = [];
+  for(var rE=0; rE<ROWS; rE++){
+    if (rE % 2 === 0){ for(var cE=0;cE<COLS;cE++) serpentine.push([rE,cE]); }
+    else { for(var cF=COLS-1;cF>=0;cF--) serpentine.push([rE,cF]); }
   }
-  const serpLen = serpentine.length;
+  var serpLen = serpentine.length;
 
   // Pattern sequencer
-  const PATTERNS = [
+  var PATTERNS = [
     "line","radial","multilines","square","line",
     "diamond","splitHoriz","verticalSplit","diagonals",
     "checkerRipple","spiralSquare","zigzag","starburst","line"
   ];
-  let phaseIndex = 0;
-  let tickInPhase = 0;
+  var phaseIndex = 0;
+  var tickInPhase = 0;
 
   // Per-phase state
-  let lineHeads = Array.from({length: ROWS}, ()=> 0);
-  let multilinesStarts = []; // per row: array of start cols
-  let checkerParity = 0;     // flips each tick in checkerRipple
-  let spiralPtr = 0;
-  let zigHeads = [];         // indices into serpentine for multiple serpents
-  let starDirs = [];         // chosen ray directions for starburst
+  var lineHeads = new Array(ROWS); for (var li=0; li<ROWS; li++) lineHeads[li]=0;
+  var multilinesStarts = []; // per row: array of start cols
+  var checkerParity = 0;     // flips each tick in checkerRipple
+  var spiralPtr = 0;
+  var zigHeads = [];         // indices into serpentine for multiple serpents
+  var starDirs = [];         // chosen ray directions for starburst
 
   // Controls
-  let speed = 1;             // ]/[ to adjust
-  const holdTicks = 10;      // brief pause between phases
-  let holding = 0;
+  var speed = 1;             // ]/[ to adjust
+  var holdTicks = 10;        // brief pause between phases
+  var holding = 0;
 
   function initPhase(name){
     clearAllLeaders();
     tickInPhase = 0; holding = 0;
     if (name === "line"){
-      lineHeads = Array.from({length: ROWS}, ()=> 0);
-      for(let r=0;r<ROWS;r++) setLeader(r, 0);
+      for (var iL=0;iL<ROWS;iL++){ lineHeads[iL]=0; setLeader(iL, 0); }
     } else if (name === "multilines"){
-      multilinesStarts = Array.from({length: ROWS}, ()=>{
-        const count = 2 + ((Math.random()*3)|0); // 2–4 per row
-        const picks = new Set();
-        while(picks.size < count) picks.add((Math.random()*COLS)|0);
-        return Array.from(picks);
-      });
+      multilinesStarts = [];
+      for (var rG=0; rG<ROWS; rG++){
+        var count = 2 + ((Math.random()*3)|0); // 2–4 per row
+        var picks = {};
+        var arr = [];
+        while(arr.length < count){
+          var v = (Math.random()*COLS)|0;
+          if(!picks[v]){ picks[v]=true; arr.push(v); }
+        }
+        multilinesStarts.push(arr);
+      }
     } else if (name === "checkerRipple"){
       checkerParity = 0;
     } else if (name === "spiralSquare"){
       spiralPtr = 0;
     } else if (name === "zigzag"){
       // 3 serpents staggered along the serpentine path
-      const gap = Math.floor(serpLen / 3);
+      var gap = Math.floor(serpLen / 3);
       zigHeads = [0, gap, gap*2];
     } else if (name === "starburst"){
       // choose 6–8 directions (unit steps on grid)
-      const dirs = [
+      var dirs = [
         [ 1, 0],[ -1, 0],[ 0, 1],[ 0,-1],
         [ 1, 1],[ 1,-1],[-1, 1],[-1,-1]
       ];
       starDirs = [];
-      const pool = dirs.slice();
-      const count = 6 + ((Math.random()*3)|0); // 6–8 rays
-      for(let i=0;i<count && pool.length;i++){
-        const idx = (Math.random()*pool.length)|0;
+      var pool = dirs.slice();
+      var countR = 6 + ((Math.random()*3)|0); // 6–8 rays
+      for(var i=0;i<countR && pool.length;i++){
+        var idx = (Math.random()*pool.length)|0;
         starDirs.push(pool.splice(idx,1)[0]);
       }
     }
@@ -396,114 +393,114 @@ function changeCell(r, c, allowGlow = true){
     clearAllLeaders();
 
     if (name === "line"){
-      for(let r=0;r<ROWS;r++){
-        const prev = lineHeads[r];
-        const next = (prev + 1) % COLS;
-        changeCell(r, prev, true);
-        setLeader(r, next);
-        lineHeads[r] = next;
+      for(var rH=0;rH<ROWS;rH++){
+        var prev = lineHeads[rH];
+        var next = (prev + 1) % COLS;
+        changeCell(rH, prev, true);
+        setLeader(rH, next);
+        lineHeads[rH] = next;
       }
 
     } else if (name === "radial"){
-      const ring = circleBuckets.get(tickInPhase);
-      if (ring){
-        for (const [r,c] of ring) changeCell(r, c, true);
-        // show heads around the active ring
-        for (const [r,c] of ring) setLeader(r, c);
+      var ring1 = circleBuckets.get(tickInPhase);
+      if (ring1){
+        for (var i1=0;i1<ring1.length;i1++){ changeCell(ring1[i1][0], ring1[i1][1], true); }
+        for (var j1=0;j1<ring1.length;j1++){ setLeader(ring1[j1][0], ring1[j1][1]); }
       }
 
     } else if (name === "square"){
-      const ring = squareBuckets.get(tickInPhase);
-      if (ring){
-        for (const [r,c] of ring) changeCell(r, c, true);
-        for (const [r,c] of ring) setLeader(r, c);
+      var ring2 = squareBuckets.get(tickInPhase);
+      if (ring2){
+        for (var i2=0;i2<ring2.length;i2++){ changeCell(ring2[i2][0], ring2[i2][1], true); }
+        for (var j2=0;j2<ring2.length;j2++){ setLeader(ring2[j2][0], ring2[j2][1]); }
       }
 
     } else if (name === "diamond"){
-      const ring = diamondBuckets.get(tickInPhase);
-      if (ring){
-        for (const [r,c] of ring) changeCell(r, c, true);
-        for (const [r,c] of ring) setLeader(r, c);
+      var ring3 = diamondBuckets.get(tickInPhase);
+      if (ring3){
+        for (var i3=0;i3<ring3.length;i3++){ changeCell(ring3[i3][0], ring3[i3][1], true); }
+        for (var j3=0;j3<ring3.length;j3++){ setLeader(ring3[j3][0], ring3[j3][1]); }
       }
 
     } else if (name === "multilines"){
-      for(let r=0;r<ROWS;r++){
-        const starts = multilinesStarts[r];
-        for (const s of starts){
-          const col = (s + tickInPhase) % COLS;
-          changeCell(r, col, true);
-          setLeader(r, col); // head marker per line per row
+      for (var rI=0;rI<ROWS;rI++){
+        var starts = multilinesStarts[rI];
+        for (var s=0; s<starts.length; s++){
+          var col = (starts[s] + tickInPhase) % COLS;
+          changeCell(rI, col, true);
+          setLeader(rI, col);
         }
       }
 
     } else if (name === "splitHoriz"){
-      const leftCol  = Math.round(cx - tickInPhase);
-      const rightCol = Math.round(cx + tickInPhase);
-      for (let r=0;r<ROWS;r++){
-        if (leftCol >= 0 && leftCol < COLS){ changeCell(r, leftCol, true); setLeader(r, leftCol); }
-        if (rightCol >= 0 && rightCol < COLS && rightCol !== leftCol){ changeCell(r, rightCol, true); setLeader(r, rightCol); }
+      var leftCol  = Math.round(cx - tickInPhase);
+      var rightCol = Math.round(cx + tickInPhase);
+      for (var rJ=0;rJ<ROWS;rJ++){
+        if (leftCol >= 0 && leftCol < COLS){ changeCell(rJ, leftCol, true); setLeader(rJ, leftCol); }
+        if (rightCol >= 0 && rightCol < COLS && rightCol !== leftCol){ changeCell(rJ, rightCol, true); setLeader(rJ, rightCol); }
       }
 
     } else if (name === "verticalSplit"){
-      const topRow    = Math.round(cy - tickInPhase);
-      const bottomRow = Math.round(cy + tickInPhase);
+      var topRow    = Math.round(cy - tickInPhase);
+      var bottomRow = Math.round(cy + tickInPhase);
       if (topRow >= 0 && topRow < ROWS){
-        for (let c=0;c<COLS;c++) changeCell(topRow, c, true);
-        // mark heads across the whole active row
-        for (let c=0;c<COLS;c++) setLeader(topRow, c);
+        for (var cG=0;cG<COLS;cG++) changeCell(topRow, cG, true);
+        for (var cH=0;cH<COLS;cH++) setLeader(topRow, cH);
       }
       if (bottomRow >= 0 && bottomRow < ROWS && bottomRow !== topRow){
-        for (let c=0;c<COLS;c++) changeCell(bottomRow, c, true);
-        for (let c=0;c<COLS;c++) setLeader(bottomRow, c);
+        for (var cI=0;cI<COLS;cI++) changeCell(bottomRow, cI, true);
+        for (var cJ=0;cJ<COLS;cJ++) setLeader(bottomRow, cJ);
       }
 
     } else if (name === "diagonals"){
-      const diag = diagBuckets[tickInPhase];
+      var diag = diagBuckets[tickInPhase];
       if (diag){
-        for (const [r,c] of diag) changeCell(r, c, true);
-        for (const [r,c] of diag) setLeader(r, c);
+        for (var i4=0;i4<diag.length;i4++){ changeCell(diag[i4][0], diag[i4][1], true); }
+        for (var j4=0;j4<diag.length;j4++){ setLeader(diag[j4][0], diag[j4][1]); }
       }
 
     } else if (name === "checkerRipple"){
-      const ring = circleBuckets.get(tickInPhase);
-      if (ring){
-        for (const [r,c] of ring){
-          if (((r + c + checkerParity) & 1) === 0) { changeCell(r, c, true); setLeader(r, c); }
+      var ring4 = circleBuckets.get(tickInPhase);
+      if (ring4){
+        for (var i5=0;i5<ring4.length;i5++){
+          var rK = ring4[i5][0], cK = ring4[i5][1];
+          if (((rK + cK + checkerParity) & 1) === 0) { changeCell(rK, cK, true); setLeader(rK, cK); }
         }
       }
       checkerParity ^= 1;
 
     } else if (name === "spiralSquare"){
       // change a chunk; leader shows only at the current tip
-      const CHUNK = 64;
-      let last = null;
-      for (let i=0; i<CHUNK && spiralPtr < spiralLen; i++, spiralPtr++){
-        const [r,c] = spiralOrder[spiralPtr];
-        changeCell(r, c, true);
-        last = [r,c];
+      var CHUNK = 64;
+      var last = null;
+      for (var i6=0; i6<CHUNK && spiralPtr < spiralLen; i6++, spiralPtr++){
+        var rc = spiralOrder[spiralPtr];
+        changeCell(rc[0], rc[1], true);
+        last = rc;
       }
       if (last) setLeader(last[0], last[1]);
 
     } else if (name === "zigzag"){
-      const trail = 2;
-      for (let s=0; s<zigHeads.length; s++){
-        const head = (zigHeads[s] + tickInPhase) % serpLen;
-        const [hr,hc] = serpentine[head];
-        setLeader(hr, hc); // head marker
-        for (let t=0; t<=trail; t++){
-          const idx = (head - t + serpLen) % serpLen;
-          const [r,c] = serpentine[idx];
-          changeCell(r, c, true);
+      var trail = 2;
+      for (var z=0; z<zigHeads.length; z++){
+        var head = (zigHeads[z] + tickInPhase) % serpLen;
+        var H = serpentine[head];
+        setLeader(H[0], H[1]); // head marker
+        for (var t=0; t<=trail; t++){
+          var idx = (head - t + serpLen) % serpLen;
+          var P = serpentine[idx];
+          changeCell(P[0], P[1], true);
         }
       }
 
     } else if (name === "starburst"){
-      for (const [dr, dc] of starDirs){
-        const r = Math.round(cy + dr * tickInPhase);
-        const c = Math.round(cx + dc * tickInPhase);
-        if (r>=0 && r<ROWS && c>=0 && c<COLS){
-          changeCell(r, c, true);
-          setLeader(r, c); // ray tips
+      for (var sd=0; sd<starDirs.length; sd++){
+        var dr = starDirs[sd][0], dc = starDirs[sd][1];
+        var rr = Math.round(cy + dr * tickInPhase);
+        var cc = Math.round(cx + dc * tickInPhase);
+        if (rr>=0 && rr<ROWS && cc>=0 && cc<COLS){
+          changeCell(rr, cc, true);
+          setLeader(rr, cc); // ray tips
         }
       }
     }
@@ -525,15 +522,15 @@ function changeCell(r, c, allowGlow = true){
   initPhase(PATTERNS[phaseIndex]);
 
   // Main loop with speed control
-  let rafId = 0, speed = 1;
+  var rafId = 0, speed = 1;
   function loop(){
-    for (let i=0; i<speed; i++) stepPhase(PATTERNS[phaseIndex]);
+    for (var i=0; i<speed; i++) stepPhase(PATTERNS[phaseIndex]);
     rafId = requestAnimationFrame(loop);
   }
-  requestAnimationFrame(()=>{ loop(); console.log("Waterfall sequencer started"); });
+  requestAnimationFrame(function(){ loop(); });
 
   // Pause when hidden
-  document.addEventListener('visibilitychange', ()=>{
+  document.addEventListener('visibilitychange', function(){
     if (document.hidden){ cancelAnimationFrame(rafId); }
     else { rafId = requestAnimationFrame(loop); }
   });
