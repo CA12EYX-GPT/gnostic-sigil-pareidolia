@@ -190,6 +190,7 @@
   const toggleBtn = document.getElementById('toggle-ritual');
   if(!gridEl) return;
 
+  // Build grid once
   const rows = [];
   for(let r=0;r<ROWS;r++){
     const row = document.createElement('div');
@@ -206,6 +207,20 @@
     rows.push(cells);
   }
 
+  // === ADD THESE HELPERS RIGHT HERE ===
+  let glowSeq = 0;                          // unique id per glow
+  const rowGlowBusy = Array(ROWS).fill(false); // optional: one glow at a time per row
+
+  function spanIsFree(r, start, len){
+    for (let i=0;i<len;i++){
+      const cell = rows[r]?.[start+i];
+      if (!cell) return false;
+      if (cell.classList.contains('word') || cell.classList.contains('leader')) return false;
+    }
+    return true;
+  }
+
+
   let ritual = false;
   function setMode(isRitual){
     ritual = !!isRitual;
@@ -217,44 +232,74 @@
   function isTypingInField(t){ return t && (t.isContentEditable || ['INPUT','TEXTAREA','SELECT'].includes(t.tagName)); }
   document.addEventListener('keydown', (e)=>{ if(isTypingInField(e.target)) return; if((e.key||'').toLowerCase()==='r'){ e.preventDefault(); setMode(!ritual); }});
 
-  function maybeGlow(r, c){
-    let len = 3;
-    if (Math.random() < (ritual ? 0.45 : 0.25)) len++;
-    if (Math.random() < (ritual ? 0.20 : 0.10)) len++;
-    const start = c - (len - 1);
-    if (start < 0) return;
-    const word = pickWordByLength(len);
-    if (!word) return;
-    const txt = word.slice(-len);
-    for (let i=0;i<txt.length;i++){
-      const cell = rows[r]?.[start + i];
-      if(!cell) return;
-      cell.textContent = txt[i];
-      cell.classList.remove('leader','sigil-static');
-      cell.classList.add('word');
-      setTimeout(()=>cell.classList.remove('word'), ritual ? 2200 : 1600);
-    }
+function maybeGlow(r, c){
+  // choose 3–5; may fall back to nearby lengths if pack lacks exact
+  let len = 3;
+  if (Math.random() < (ritual ? 0.45 : 0.25)) len++;
+  if (Math.random() < (ritual ? 0.20 : 0.10)) len++;
+
+  const start = c - (len - 1);
+  if (start < 0) return;
+
+  // optional: prevent multiple glows fighting on the same row
+  if (rowGlowBusy[r]) return;
+
+  // only glow if the intended span is free (prevents AL + JOY merging)
+  if (!spanIsFree(r, start, len)) return;
+
+  const word = pickWordByLength(len);
+  if (!word) return;
+
+  const id = (++glowSeq) + "";            // id as string
+  const txt = word.slice(-len);
+
+  rowGlowBusy[r] = true;
+  const dur = ritual ? 2200 : 1600;
+
+  for (let i=0;i<txt.length;i++){
+    const cell = rows[r][start + i];
+    cell.textContent = txt[i];
+    cell.classList.remove('leader','sigil-static'); // make it purely a word
+    cell.dataset.wordId = id;
+    cell.classList.add('word');
   }
 
-  function changeCell(r, c, allowGlow = true){
-    const cell = rows[r]?.[c];
-    if(!cell) return;
-    cell.classList.remove('leader', 'sigil-static', 'word');
-    const staticSigilChance = ritual ? 0.03 : 0.015;
-    if (Math.random() < staticSigilChance){
-      const sig = leaderSigils[(Math.random()*leaderSigils.length)|0];
-      cell.textContent = sig;
-      cell.classList.add('sigil-static');
-    } else {
-      cell.textContent = letters[(Math.random()*letters.length)|0];
-      if (Math.random() < (ritual ? 0.04 : 0.025)){
-        cell.style.opacity = "0.7";
-        setTimeout(()=>{ cell.style.opacity = "0.95"; }, 160);
+  // remove the glow only if it's still the same id (won't kill newer glows)
+  setTimeout(()=>{
+    for (let i=0;i<txt.length;i++){
+      const cell = rows[r][start + i];
+      if (cell && cell.dataset.wordId === id){
+        cell.classList.remove('word');
+        delete cell.dataset.wordId;
       }
-      const wordChance = ritual ? 0.14 : 0.10;
-      if (allowGlow && Math.random() < wordChance) maybeGlow(r, c);
     }
+    rowGlowBusy[r] = false;
+  }, dur);
+}
+
+
+function changeCell(r, c, allowGlow = true){
+  const cell = rows[r]?.[c];
+  if(!cell) return;
+
+  // Clear any previous roles
+  cell.classList.remove('leader','sigil-static','word');
+  delete cell.dataset.wordId;
+
+  // Normal letter change
+  cell.textContent = letters[(Math.random()*letters.length)|0];
+
+  // Micro flicker
+  if(Math.random() < (ritual ? 0.04 : 0.025)){
+    cell.style.opacity = "0.7";
+    setTimeout(()=>{ cell.style.opacity = "0.95"; }, 160);
   }
+
+  // Maybe glow a word
+  const wordChance = ritual ? 0.14 : 0.1;
+  if(allowGlow && Math.random() < wordChance) maybeGlow(r, c);
+}
+
 
   const leaderChars = Array.from({length: ROWS}, (_,r)=> leaderSigils[r % leaderSigils.length]);
   function setLeader(r, c){
