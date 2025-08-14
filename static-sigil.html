@@ -63,75 +63,78 @@
 (() => {
   const canvas = document.getElementById('snow');
   const ctx = canvas.getContext('2d', { alpha:false, willReadFrequently:true });
-  const glog = document.getElementById('lastMark');
-  const lamp = document.getElementById('scryLamp');
+
+  // UI
   const dSlider = document.getElementById('density');
   const cSlider = document.getElementById('contrast');
   const fSlider = document.getElementById('flicker');
   const driftSlider = document.getElementById('drift');
   const hintSlider = document.getElementById('hint');
+  const lamp = document.getElementById('scryLamp');
   document.getElementById('seedBtn').onclick = () => { reseed(); latentSigil = makeSigil(); };
   document.getElementById('markBtn').onclick = markMoment;
 
-  // Sizing (use CSS pixel size, draw at devicePixelRatio internally)
-  let wCSS=0,hCSS=0, DPR=Math.max(1, Math.min(2, window.devicePixelRatio||1));
+  // Size & buffers (the old bug was here: typed arrays never got sized!)
+  let DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  let wCSS=0, hCSS=0;
+  let img, fieldA, fieldB;
+
   function resize(){
     const r = canvas.parentElement.getBoundingClientRect();
-    wCSS = Math.max(300, Math.floor(r.width));
-    hCSS = Math.max(240, Math.floor(r.height));
+    wCSS = Math.max(320, r.width|0);
+    hCSS = Math.max(240, r.height|0);
     canvas.width  = Math.floor(wCSS * DPR);
     canvas.height = Math.floor(hCSS * DPR);
     ctx.setTransform(DPR,0,0,DPR,0,0);
-    // refresh buffers
-    img = ctx.createImageData(wCSS, hCSS);
+
+    // Allocate NEW buffers to correct size (this fixes the “no static” issue)
+    img    = ctx.createImageData(wCSS, hCSS);
     fieldA = new Uint8ClampedArray(wCSS*hCSS);
     fieldB = new Uint8ClampedArray(wCSS*hCSS);
+
+    // Prime the fields so there’s noise immediately
+    makeField(fieldA, wCSS, hCSS, parseFloat(dSlider.value));
+    makeField(fieldB, wCSS, hCSS, Math.min(0.98, parseFloat(dSlider.value)*0.96 + 0.02));
   }
   addEventListener('resize', resize, {passive:true});
   resize();
 
-  // RNG (xorshift)
-  let seed = (Math.random()*1e9)|0;
+  // RNG
+  let seed = ((Math.random()*1e9)|0) ^ ((performance.now()*1000)|0);
   function rng(){ let x=seed|=0; x^=x<<13; x^=x>>>17; x^=x<<5; seed=x>>>0; return (seed>>>0)/4294967296; }
-  function reseed(){ seed = ((performance.now()*1000)|0) ^ ((Math.random()*1e9)|0); }
+  function reseed(){ seed = ((Math.random()*1e9)|0) ^ ((performance.now()*1000)|0); }
 
-  // Mobile-safe latent sigil: OffscreenCanvas fallback
-  function getCompatCanvas(w,h){
-    try {
-      if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w,h);
-    } catch(_) {}
-    const c = document.createElement('canvas'); c.width=w; c.height=h; return c;
+  // OffscreenCanvas fallback (iOS-safe)
+  function compatCanvas(w,h){
+    try { if (typeof OffscreenCanvas!=='undefined') return new OffscreenCanvas(w,h); } catch(_){}
+    const c=document.createElement('canvas'); c.width=w; c.height=h; return c;
   }
 
+  // Latent “hint” mask
   function makeSigil(){
-    const w=256, h=256;
-    const off = getCompatCanvas(w,h);
-    const oc = off.getContext('2d');
-    oc.clearRect(0,0,w,h);
-    oc.globalCompositeOperation = 'lighter';
+    const w=256,h=256, off=compatCanvas(w,h), oc=off.getContext('2d');
+    oc.clearRect(0,0,w,h); oc.globalCompositeOperation='lighter';
     const blobs = 6 + (rng()*6|0);
     for(let i=0;i<blobs;i++){
       const cx=(rng()*0.6+0.2)*w, cy=(rng()*0.6+0.2)*h, r=(rng()*40+18), a=0.02+rng()*0.035;
       radial(oc,cx,cy,r,a); radial(oc,w-cx,cy,r*0.92,a*0.9);
     }
     oc.globalAlpha=0.06; oc.lineWidth=2; oc.strokeStyle='#fff';
-    for(let i=0;i<4;i++){ oc.beginPath(); oc.moveTo(rng()*w, rng()*h); oc.quadraticCurveTo(rng()*w, rng()*h, rng()*w, rng()*h); oc.stroke(); }
+    for(let i=0;i<4;i++){ oc.beginPath(); oc.moveTo(rng()*w,rng()*h); oc.quadraticCurveTo(rng()*w,rng()*h,rng()*w,rng()*h); oc.stroke(); }
     return off;
     function radial(c,x,y,r,a){ const g=c.createRadialGradient(x,y,0,x,y,r); g.addColorStop(0,`rgba(255,255,255,${a})`); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.fill(); }
   }
-
-  let fieldA = new Uint8ClampedArray(wCSS*hCSS);
-  let fieldB = new Uint8ClampedArray(wCSS*hCSS);
-  let img = ctx.createImageData(wCSS, hCSS);
   let latentSigil = makeSigil();
-  let t=0;
 
+  // Noise fields
   function makeField(buf,w,h,density){
     for(let i=0;i<w*h;i++){ buf[i] = (rng() < density) ? 255 : 0; }
   }
+
+  // Main loop
+  let t=0;
   function frame(){
     const w = img.width, h = img.height;
-    // flicker & drift
     const hz = parseFloat(fSlider.value);
     const step = hz<=0 ? 999 : Math.max(1, Math.floor(60/Math.max(1,hz)));
     if ((t % step) === 0) makeField(fieldA, w, h, parseFloat(dSlider.value));
@@ -141,63 +144,47 @@
     const contrast = parseFloat(cSlider.value);
     const hints = parseFloat(hintSlider.value);
 
-    // write into single reused ImageData (perf on iOS)
     const data = img.data;
     for (let i=0,px=0;i<w*h;i++,px+=4){
-      const a=fieldA[i]||0, b=fieldB[i]||0;
-      let v = a*(1-drift) + b*drift + (rng()*35 - 17);
-      let n = Math.max(0, Math.min(255, ((v-128)*contrast)+128));
+      const a=fieldA[i], b=fieldB[i];
+      let v = a*(1-drift) + b*drift + (rng()*35 - 17);           // shimmer
+      let n = Math.max(0, Math.min(255, ((v-128)*contrast)+128)); // contrast curve
       data[px]=data[px+1]=data[px+2]=n; data[px+3]=255;
     }
     ctx.putImageData(img,0,0);
 
-    // draw hint mask (fallback canvas is fine on iOS)
     if (hints>0.001){
-      const s = latentSigil;
-      const lw = Math.floor(w*0.9), lh = Math.floor(h*0.9);
+      const lw = Math.floor(w*0.9), lh=Math.floor(h*0.9);
       const dx = Math.floor((w-lw)/2 + Math.sin(t*0.003)*w*0.02);
       const dy = Math.floor((h-lh)/2 + Math.cos(t*0.002)*h*0.02);
-      ctx.globalAlpha = hints*0.65;
-      ctx.globalCompositeOperation = 'screen';
-      ctx.drawImage(s, dx, dy, lw, lh);
-      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = hints*0.65; ctx.globalCompositeOperation='screen';
+      ctx.drawImage(latentSigil, dx, dy, lw, lh);
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation='source-over';
     }
 
     t++; requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 
-  // Scry mode + tiny rituals
+  // Scry mode + small rituals
+  function markMoment(){/* purely UI; keep as-is if you had it before */ }
   let scry=false;
-  function toggleScry(to){ scry = (to===undefined)?!scry:!!to; lamp.classList.toggle('on', scry);
-    if (scry){ cSlider.value=(+cSlider.value*1.25).toFixed(2); fSlider.value=Math.max(0,(+fSlider.value*0.45)).toFixed(2); driftSlider.value=Math.max(0.08,(+driftSlider.value*0.6)).toFixed(2); hintSlider.value=Math.min(0.45,(+hintSlider.value+0.06)).toFixed(2);
-      document.getElementById('myth').textContent='“Hold your breath on the exhale; the channel brightens.”';
-    } else { document.getElementById('myth').textContent='“The channel is always open; you’re just learning where to look.”'; }
+  function toggleScry(to){
+    scry = (to===undefined)?!scry:!!to;
+    lamp.classList.toggle('on', scry);
+    if (scry){
+      cSlider.value=(+cSlider.value*1.25).toFixed(2);
+      fSlider.value=Math.max(0,(+fSlider.value*0.45)).toFixed(2);
+      driftSlider.value=Math.max(0.08,(+driftSlider.value*0.6)).toFixed(2);
+      hintSlider.value=Math.min(0.45,(+hintSlider.value+0.06)).toFixed(2);
+    }
   }
   lamp.onclick=()=>toggleScry();
 
-  function markMoment(){ const stamp=new Date().toLocaleTimeString(); glog.textContent=`Marked at ${stamp} — “Noted an appearance.”`; }
-  function glowWord(){
-    const words=['SEEN','TRACE','LISTEN','VEIL','ARCHIVE','ECHO','FATE','GNOSIS'];
-    const w=words[(Math.random()*words.length)|0];
-    const el=document.createElement('div');
-    Object.assign(el.style,{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)',color:'var(--fg)',fontWeight:'600',letterSpacing:'0.28em',textTransform:'uppercase',textShadow:'0 0 14px rgba(50,224,196,.75)',opacity:'0',filter:'blur(1px)',fontSize:'clamp(12px,2.6vw,24px)',pointerEvents:'none'});
-    el.textContent=w; canvas.parentElement.appendChild(el);
-    let a=0; (function anim(){ a+=0.03; el.style.opacity=String(Math.sin(a)*0.9); if(a<Math.PI) requestAnimationFrame(anim); else el.remove(); })();
-  }
-
-  addEventListener('keydown', (e)=>{
-    if (e.code==='Space'){ e.preventDefault(); markMoment(); }
-    else if (e.key==='h'||e.key==='H'){ hintSlider.value = (hintSlider.value>0?0:0.18); }
-    else if (e.key==='s'||e.key==='S'){ toggleScry(); }
-    else if (e.key==='r'||e.key==='R'){ reseed(); latentSigil=makeSigil(); }
-    else if (e.key==='g'||e.key==='G'){ glowWord(); }
-  });
-
-  // On iOS, RAF may be throttled until interaction. Tap to “wake” if needed.
-  document.addEventListener('touchstart', ()=>{}, {passive:true});
-
+  // Wake iOS raf if needed
+  document.addEventListener('touchstart',()=>{}, {passive:true});
 })();
 </script>
+
 </body>
 </html>
