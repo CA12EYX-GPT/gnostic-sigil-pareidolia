@@ -14,7 +14,7 @@
   .pane{position:relative;border:1px solid #1e2326;border-radius:10px;overflow:hidden;
     background:radial-gradient(120% 110% at 50% 0%,#101215 0%,#0b0b0e 70%,#08090b 100%);
     box-shadow:0 10px 40px rgba(0,0,0,.45), inset 0 0 120px rgba(0,0,0,.3);
-    min-height:58vh;  /* ensure visible height on mobile */
+    min-height:58vh;
   }
   canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
   .hud{position:absolute;left:12px;bottom:12px;display:flex;gap:10px;flex-wrap:wrap;
@@ -71,27 +71,33 @@
   const drift = document.getElementById('drift');
   const hints = document.getElementById('hint');
 
-  // Sizing + buffers
-  let DPR = Math.max(1, Math.min(2, window.devicePixelRatio||1));
-  let img, fieldA, fieldB, w, h;
+  // Backing-store sizes & fields
+  let img, fieldA, fieldB, W, H;
 
   function resize(){
     const r = canvas.parentElement.getBoundingClientRect();
-    // ensure the pane actually has height on mobile
+    const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+
     const cssW = Math.max(300, Math.floor(r.width));
     const cssH = Math.max(240, Math.floor(r.height));
+
+    // Backing-store size (physical pixels)
     canvas.width  = Math.floor(cssW * DPR);
     canvas.height = Math.floor(cssH * DPR);
-    ctx.setTransform(DPR,0,0,DPR,0,0);
 
-    w = cssW; h = cssH;
-    img    = ctx.createImageData(w, h);
-    fieldA = new Uint8ClampedArray(w*h);
-    fieldB = new Uint8ClampedArray(w*h);
+    // IMPORTANT: identity transform so putImageData writes 1:1
+    ctx.setTransform(1,0,0,1,0,0);
 
-    // prime fields so first frame shows static
-    makeField(fieldA, w, h, parseFloat(dens.value));
-    makeField(fieldB, w, h, Math.min(0.98, parseFloat(dens.value)*0.96 + 0.02));
+    W = canvas.width;
+    H = canvas.height;
+
+    img    = ctx.createImageData(W, H);
+    fieldA = new Uint8ClampedArray(W * H);
+    fieldB = new Uint8ClampedArray(W * H);
+
+    // prime
+    makeField(fieldA, W, H, parseFloat(dens.value));
+    makeField(fieldB, W, H, Math.min(0.98, parseFloat(dens.value)*0.96 + 0.02));
   }
   window.addEventListener('resize', resize, {passive:true});
   resize();
@@ -105,7 +111,7 @@
     for(let i=0;i<w*h;i++){ buf[i] = (rng() < density) ? 255 : 0; }
   }
 
-  // Optional hint mask (safe fallback)
+  // Hint mask (offscreen, with fallback)
   function compatCanvas(W,H){
     try{ if (typeof OffscreenCanvas!=='undefined') return new OffscreenCanvas(W,H); }catch(_){}
     const c=document.createElement('canvas'); c.width=W; c.height=H; return c;
@@ -125,46 +131,56 @@
   }
   let mask = makeSigil();
 
-  // Loop
-  let t=0;
-  function frame(){
+  // Animation timing (time-based so it behaves at 60/90/120 Hz)
+  let nextA = 0, nextB = 0;
+
+  function frame(now){
     const hz = parseFloat(flick.value);
-    const step = hz<=0 ? 999 : Math.max(1, Math.floor(60/Math.max(1,hz)));
-    if ((t % step) === 0) makeField(fieldA, w, h, parseFloat(dens.value));
-    if ((t % (step*2)) === 0) makeField(fieldB, w, h, Math.min(0.98, parseFloat(dens.value)*0.96 + 0.02));
+    const stepMs = hz <= 0 ? 1e9 : (1000 / hz);
+
+    if (now >= nextA){
+      makeField(fieldA, W, H, parseFloat(dens.value));
+      nextA = now + stepMs;
+    }
+    if (now >= nextB){
+      makeField(fieldB, W, H, Math.min(0.98, parseFloat(dens.value)*0.96 + 0.02));
+      nextB = now + stepMs * 2;
+    }
 
     const mix = parseFloat(drift.value);
     const k   = parseFloat(cont.value);
     const hint = parseFloat(hints.value);
 
     const data = img.data;
-    for (let i=0,px=0;i<w*h;i++,px+=4){
+    for (let i=0,px=0;i<W*H;i++,px+=4){
       const a=fieldA[i], b=fieldB[i];
       let v = a*(1-mix) + b*mix + (rng()*35 - 17);
       let n = Math.max(0, Math.min(255, ((v-128)*k)+128));
       data[px]=data[px+1]=data[px+2]=n; data[px+3]=255;
     }
-    ctx.putImageData(img,0,0);
+    ctx.putImageData(img, 0, 0);
 
     if (hint>0.001){
-      const lw = Math.floor(w*0.9), lh = Math.floor(h*0.9);
-      const dx = Math.floor((w-lw)/2 + Math.sin(t*0.003)*w*0.02);
-      const dy = Math.floor((h-lh)/2 + Math.cos(t*0.002)*h*0.02);
+      const lw = Math.floor(W*0.9), lh = Math.floor(H*0.9);
+      const dx = Math.floor((W-lw)/2 + Math.sin(now*0.003)*W*0.02);
+      const dy = Math.floor((H-lh)/2 + Math.cos(now*0.002)*H*0.02);
       ctx.globalAlpha = hint*0.65; ctx.globalCompositeOperation='screen';
       ctx.drawImage(mask, dx, dy, lw, lh);
       ctx.globalAlpha = 1; ctx.globalCompositeOperation='source-over';
     }
 
-    t++; requestAnimationFrame(frame);
+    requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 
   // iOS sometimes idles RAF until interaction
   document.addEventListener('touchstart',()=>{}, {passive:true});
+
+  // Optional: reroll seed button
+  document.getElementById('seedBtn')?.addEventListener('click', () => {
+    seed = ((Math.random()*1e9)|0) ^ ((performance.now()*1000)|0);
+  }, {passive:true});
 })();
 </script>
-
-
-
 </body>
 </html>
