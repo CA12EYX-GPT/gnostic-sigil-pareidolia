@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Gnostic Sigil Pareidolia — Static (Mobile Safe)</title>
+<title>Gnostic Sigil Pareidolia — Static (Fade In)</title>
 <style>
   :root{--bg:#0b0b0e;--fg:#e7fdfc;--accent:#32e0c4}
   html,body{height:100%;margin:0;background:var(--bg);color:#d7d7da;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
@@ -62,56 +62,35 @@
 <script>
 (() => {
   const canvas = document.getElementById('snow');
+  let ctx = canvas.getContext('2d', {alpha:false, willReadFrequently:true});
+  if (!ctx) ctx = canvas.getContext('2d', {alpha:false});
+  if (!ctx) ctx = canvas.getContext('2d');
 
-  // Get 2D context with safe fallbacks (prevents null ctx on some Safari builds)
-  let ctx = null;
-  try { ctx = canvas.getContext('2d', {alpha:false, willReadFrequently:true}); } catch(_) {}
-  if (!ctx) { try { ctx = canvas.getContext('2d', {alpha:false}); } catch(_) {} }
-  if (!ctx) { ctx = canvas.getContext('2d'); }
-  if (!ctx) { alert('2D canvas not supported'); return; }
-
-  // Controls
   const dens = document.getElementById('density');
   const cont = document.getElementById('contrast');
   const flick = document.getElementById('flicker');
   const drift = document.getElementById('drift');
   const hints = document.getElementById('hint');
 
-  // Backing-store sizes & fields
   let img, fieldA, fieldB, W = 0, H = 0;
 
   function resize(){
     const r = canvas.parentElement.getBoundingClientRect();
-    // If layout isn't ready yet, try again on the next frame
     if (!r.width || !r.height) { requestAnimationFrame(resize); return; }
-
     const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
     const cssW = Math.max(300, Math.floor(r.width));
     const cssH = Math.max(240, Math.floor(r.height));
-
-    // Backing-store size (physical pixels); keep a minimum of 2×2
     canvas.width  = Math.max(2, Math.floor(cssW * DPR));
     canvas.height = Math.max(2, Math.floor(cssH * DPR));
-
-    // Identity transform so putImageData writes 1:1 into the backing store
     ctx.setTransform(1,0,0,1,0,0);
-
     W = canvas.width;
     H = canvas.height;
-
     img    = ctx.createImageData(W, H);
     fieldA = new Uint8ClampedArray(W * H);
     fieldB = new Uint8ClampedArray(W * H);
-
-    // Prime fields so first frame shows static
     makeField(fieldA, W, H, parseFloat(dens.value));
     makeField(fieldB, W, H, Math.min(0.98, parseFloat(dens.value)*0.96 + 0.02));
-
-    // Optional: draw a tiny sanity dot so we know we're painting
-    ctx.fillStyle = '#111'; ctx.fillRect(0,0,2,2);
   }
-
-  // Run resize when the layout is definitely ready
   window.addEventListener('resize', resize, {passive:true});
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => requestAnimationFrame(resize), {once:true});
@@ -119,17 +98,10 @@
     requestAnimationFrame(resize);
   }
 
-  // RNG
   let seed = ((Math.random()*1e9)|0) ^ ((performance.now()*1000)|0);
   function rng(){ let x=seed|=0; x^=x<<13; x^=x>>>17; x^=x<<5; seed=x>>>0; return (seed>>>0)/4294967296; }
+  function makeField(buf,w,h,density){ for(let i=0;i<w*h;i++){ buf[i] = (rng() < density) ? 255 : 0; } }
 
-  // Noise
-  function makeField(buf,w,h,density){
-    const N = w*h;
-    for(let i=0;i<N;i++){ buf[i] = (rng() < density) ? 255 : 0; }
-  }
-
-  // Hint mask (offscreen, with fallback)
   function compatCanvas(W,H){
     try{ if (typeof OffscreenCanvas!=='undefined') return new OffscreenCanvas(W,H); }catch(_){}
     const c=document.createElement('canvas'); c.width=W; c.height=H; return c;
@@ -149,15 +121,15 @@
   }
   let mask = makeSigil();
 
-  // Animation timing (time-based so it behaves at 60/90/120 Hz)
+  // Fade-in variables
+  const fadeStart = performance.now();
+  const fadeDuration = 4000; // ms
+
   let nextA = 0, nextB = 0;
-
   function frame(now){
-    if (W === 0 || H === 0) { requestAnimationFrame(frame); return; } // wait until sized
-
+    if (W === 0 || H === 0) { requestAnimationFrame(frame); return; }
     const hz = parseFloat(flick.value);
     const stepMs = hz <= 0 ? 1e9 : (1000 / hz);
-
     if (now >= nextA){ makeField(fieldA, W, H, parseFloat(dens.value)); nextA = now + stepMs; }
     if (now >= nextB){ makeField(fieldB, W, H, Math.min(0.98, parseFloat(dens.value)*0.96 + 0.02)); nextB = now + stepMs * 2; }
 
@@ -166,8 +138,7 @@
     const hint = parseFloat(hints.value);
 
     const data = img.data;
-    const N = W*H;
-    for (let i=0,px=0;i<N;i++,px+=4){
+    for (let i=0,px=0;i<W*H;i++,px+=4){
       const a=fieldA[i], b=fieldB[i];
       let v = a*(1-mix) + b*mix + (rng()*35 - 17);
       let n = Math.max(0, Math.min(255, ((v-128)*k)+128));
@@ -175,23 +146,24 @@
     }
     ctx.putImageData(img, 0, 0);
 
-    if (hint>0.001){
+    // Fade-in logic
+    let effectiveHint = hint;
+    const fadeProgress = (now - fadeStart) / fadeDuration;
+    if (fadeProgress < 1) effectiveHint *= fadeProgress;
+
+    if (effectiveHint > 0.001){
       const lw = Math.floor(W*0.9), lh = Math.floor(H*0.9);
       const dx = Math.floor((W-lw)/2 + Math.sin(now*0.003)*W*0.02);
       const dy = Math.floor((H-lh)/2 + Math.cos(now*0.002)*H*0.02);
-      ctx.globalAlpha = hint*0.65; ctx.globalCompositeOperation='screen';
+      ctx.globalAlpha = effectiveHint*0.65; ctx.globalCompositeOperation='screen';
       ctx.drawImage(mask, dx, dy, lw, lh);
       ctx.globalAlpha = 1; ctx.globalCompositeOperation='source-over';
     }
-
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 
-  // iOS sometimes idles RAF until interaction
   document.addEventListener('touchstart',()=>{}, {passive:true});
-
-  // Reroll seed button
   document.getElementById('seedBtn')?.addEventListener('click', () => {
     seed = ((Math.random()*1e9)|0) ^ ((performance.now()*1000)|0);
   }, {passive:true});
